@@ -32,17 +32,28 @@ No mouse. No distractions. Just you and your codebase.
 
 ## Prerequisites
 
-| Requirement | Minimum Version |
-|---|---|
-| Neovim | 0.12+ (uses `vim.lsp.config`, `vim.lsp.enable`) |
-| Git | Any recent version |
-| Terminal | Any modern terminal with true color support |
+Install these **before** setting up Console IDE:
+
+| Requirement | Version | Download |
+|---|---|---|
+| [Neovim](https://neovim.io) | 0.12+ | [neovim.io/download](https://neovim.io/download) |
+| [Git](https://git-scm.com) | Any recent | [git-scm.com](https://git-scm.com/downloads) |
+| [Node.js / npm](https://nodejs.org) | 18+ LTS | [nodejs.org](https://nodejs.org) |
+| [opencode](https://opencode.ai) | Latest | [opencode.ai/download](https://opencode.ai/download) |
+| Terminal | True color support | Windows Terminal / iTerm2 / Kitty / Alacritty |
+
+### Why each is needed
+
+- **Neovim** — The editor itself (uses `vim.lsp.config`, `vim.lsp.enable` APIs from 0.12+)
+- **Git** — Required by lazy.nvim to clone plugins; also needed for Git signs and Lazygit features
+- **Node.js / npm** — Many LSP servers (pyright, etc.) and tools like opencode depend on the npm ecosystem
+- **opencode** — Powers the AI coding assistant opened via `<leader>ai`
+- **Terminal with true color** — Essential for correct colorscheme rendering (dark/light/mocha themes)
 
 ### Optional (recommended)
 
 - A [Nerd Font](https://www.nerdfonts.com/) for icon rendering
 - [lazygit](https://github.com/jesseduffield/lazygit) for the `<leader>g` git UI
-- [opencode](https://opencode.ai) for AI integration via `<leader>ai`
 
 ## Installation
 
