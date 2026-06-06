@@ -1,0 +1,13 @@
+# Neovim auto-generated
+spell/
+
+# OS files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# Editor temp
+Session.vim
+.netrwhist
