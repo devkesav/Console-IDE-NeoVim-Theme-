@@ -459,7 +459,6 @@ function ShowAbout()
         col       = math.floor((vim.o.columns - width) / 2),
         style     = "minimal",
         border    = "single",
-        winblend  = 0,
         title     = "  Console IDE — About  ",
         title_pos = "center",
     })
@@ -818,7 +817,6 @@ function OpenCommandPalette()
         col       = math.floor((vim.o.columns - width)  / 2),
         style     = "minimal",
         border    = "single",
-        winblend  = 0,
         title     = "  Console IDE — Command Palette  ",
         title_pos = "center",
     })
@@ -1435,7 +1433,6 @@ vim.api.nvim_create_user_command("Customize", function()
         col = col,
         style = "minimal",
         border = "single",
-        winblend = 0,
     })
 
     vim.keymap.set("n", "q", function()
@@ -1825,7 +1822,6 @@ local function show_update_popup(behind)
         col       = math.floor((vim.o.columns - width) / 2),
         style     = "minimal",
         border    = "single",
-        winblend  = 0,
         title     = "  Update  ",
         title_pos = "center",
     })
@@ -1942,7 +1938,6 @@ local function show_nerd_font_popup()
         col = col,
         style = "minimal",
         border = "single",
-        winblend = 0,
     })
 
     local close = function()
