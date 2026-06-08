@@ -31,6 +31,7 @@ local DD = {
     guifont       = "JetBrainsMono NFM:h11",
     zen_mode      = false,
     live_watch    = true,
+    follow_mode   = false,
 }
 
 -- ── Persistent settings ──────────────────────────────────────────────────
@@ -429,6 +430,14 @@ end
         "karb94/neoscroll.nvim",
         config = function() require("neoscroll").setup() end,
     },
+
+    -- OpenCode Neovim editor context (cursor, selection, diagnostics)
+    {
+        "talldan/opencode-nvim-editor-context",
+        config = function()
+            require("editor-context").setup()
+        end,
+    },
 })
 
 -- ── Leader ───────────────────────────────────────────────────────────────
@@ -549,6 +558,7 @@ local keybinds_vim = {
     { "Editor",        "SPC s",     "Open Settings",                   1 },
     { "Editor",        "SPC uc",    "Customize theme, font & icons",    2 },
     { "Editor",        "SPC z",     "Toggle Zen Mode",                 2 },
+    { "Editor",        "SPC cf",    "Toggle Cursor Sync (follow mode)", 2 },
     { "Editor",        "SPC h",     "Open Command Palette",            1 },
     { "Navigation",    "Tab",       "Next Buffer",                     1 },
     { "Navigation",    "S-Tab",     "Previous Buffer",                 1 },
@@ -1217,6 +1227,46 @@ local function apply_zen_mode(v)
     end
 end
 
+-- ══════════════════════════════════════════════════════════════
+--  CURSOR SYNC  (Follow Mode — cursor follows OpenCode edits)
+-- ══════════════════════════════════════════════════════════════
+local _follow_timer = nil
+local _follow_last_line = nil
+local follow_path = vim.fn.stdpath("data") .. "/opencode_cursor.txt"
+
+local function apply_follow_mode(v)
+    if _follow_timer then
+        vim.fn.timer_stop(_follow_timer)
+        _follow_timer = nil
+        _follow_last_line = nil
+    end
+    if v then
+        _follow_timer = vim.fn.timer_start(300, function()
+            local f = io.open(follow_path, "r")
+            if not f then return end
+            local line = tonumber(f:read("*a"))
+            f:close()
+            if not line or line == _follow_last_line then return end
+            _follow_last_line = line
+            for _, win in ipairs(vim.api.nvim_list_wins()) do
+                local buf = vim.api.nvim_win_get_buf(win)
+                if vim.bo[buf].buftype == "" then
+                    local total = vim.api.nvim_buf_line_count(buf)
+                    if line >= 1 and line <= total then
+                        pcall(vim.api.nvim_win_set_cursor, win, { line, 0 })
+                        pcall(vim.api.nvim_set_current_win, win)
+                        vim.cmd("normal! zz")
+                    end
+                    break
+                end
+            end
+        end, { ["repeat"] = -1 })
+        vim.api.nvim_echo({ { "Cursor Sync ON — following OpenCode", "None" } }, false, {})
+    else
+        vim.api.nvim_echo({ { "Cursor Sync OFF", "None" } }, false, {})
+    end
+end
+
 local function apply_error_lens(v)
     local ok, el = pcall(require, "error-lens")
     if ok then el.setup({ enabled = v, auto_adjust = { enable = false }, prefix = 7 }) end
@@ -1301,6 +1351,7 @@ local toggle_cmds = {
     whichkey   = { desc = "Which-key hints",     fn = nil },
     zen_mode   = { desc = "Zen mode",            fn = function(v) apply_zen_mode(v) end },
     live_watch = { desc = "Live watch",          fn = nil },
+    follow_mode = { desc = "Cursor sync",  fn = function(v) apply_follow_mode(v) end },
 }
 
 vim.api.nvim_create_user_command("SettingsStatus", function()
@@ -1330,6 +1381,7 @@ vim.api.nvim_create_user_command("SettingsStatus", function()
         { desc = "Which-key hints",      key = "whichkey",      type = "toggle", cmd = ":ToggleWhichkey",       usage = "Toggle which-key hints ON/OFF" },
         { desc = "Zen mode",             key = "zen_mode",      type = "toggle", cmd = ":ToggleZen_mode",        usage = "Toggle distraction-free zen mode ON/OFF" },
         { desc = "Live watch",           key = "live_watch",    type = "toggle", cmd = ":ToggleLive_watch",      usage = "Auto-reload file when changed on disk" },
+        { desc = "Cursor sync", key = "follow_mode", type = "toggle", cmd = ":ToggleFollow_mode", usage = "Cursor follows OpenCode edits in real time" },
         { desc = "Tab width",            key = "tabwidth",      type = "setter", cmd = ":SetTabWidth {2-8}",     fn = function(v) local n = tonumber(v); if n and n >= 2 and n <= 8 then DD.tabwidth = n; vim.opt.tabstop = n; vim.opt.shiftwidth = n end end },
         { desc = "OC width",             key = "oc_width",      type = "setter", cmd = ":SetOCWidth {30-90}",    fn = function(v) local n = tonumber(v); if n and n >= 30 and n <= 90 then DD.oc_width = n end end },
         { desc = "Theme",                key = "theme",         type = "setter", cmd = ":SetTheme {dark|light|mocha}", cycle = { "dark", "light", "mocha" }, fn = function(v) DD.theme = v; apply_theme(v) end },
@@ -1720,16 +1772,12 @@ vim.api.nvim_create_autocmd("BufReadCmd", {
 -- ══════════════════════════════════════════════════════════════════════════
 vim.keymap.set("n", "<leader>e",  ":NvimTreeToggle<CR>",            { silent = true })
 vim.keymap.set("n", "<leader>t", function()
-    local dir = vim.fn.expand("%:p:h")
-    if dir == "" then dir = vim.fn.getcwd() end
-    require("toggleterm.terminal").Terminal:new({ direction = "horizontal", size = 10, dir = dir }):toggle()
-end, { silent = true, desc = "Toggle terminal (file dir)" })
+    require("toggleterm.terminal").Terminal:new({ direction = "horizontal", size = 10, dir = get_project_root() }):toggle()
+end, { silent = true, desc = "Toggle terminal (project root)" })
 vim.keymap.set("n", "<C-e>",      ":NvimTreeToggle<CR>",            { silent = true })
 vim.keymap.set("n", "<C-t>", function()
-    local dir = vim.fn.expand("%:p:h")
-    if dir == "" then dir = vim.fn.getcwd() end
-    require("toggleterm.terminal").Terminal:new({ direction = "horizontal", size = 10, dir = dir }):toggle()
-end, { silent = true, desc = "Toggle terminal (file dir)" })
+    require("toggleterm.terminal").Terminal:new({ direction = "horizontal", size = 10, dir = get_project_root() }):toggle()
+end, { silent = true, desc = "Toggle terminal (project root)" })
 
 vim.keymap.set("n", "<leader>ff", ":Telescope find_files<CR>",      { silent = true })
 vim.keymap.set("n", "<leader>fg", ":Telescope live_grep<CR>",       { silent = true })
@@ -1746,13 +1794,15 @@ vim.keymap.set("n", "<leader>z", function()
     vim.api.nvim_echo({ { "Zen mode: " .. bool_str(DD.zen_mode), "None" } }, false, {})
 end, { silent = true, desc = "Toggle zen mode" })
 
+vim.keymap.set("n", "<leader>cf", function()
+    toggle_option("follow_mode", apply_follow_mode)
+end, { silent = true, desc = "Toggle cursor sync / follow mode" })
+
 vim.keymap.set("n", "<leader>g", function()
-    local dir = vim.fn.expand("%:p:h")
-    if dir == "" then dir = vim.fn.getcwd() end
     require("toggleterm.terminal").Terminal:new({
         cmd       = "lazygit",
         direction = "tab",
-        dir       = dir,
+        dir       = get_project_root(),
         on_open   = function() vim.cmd("startinsert!") end,
         on_close  = function()
             if #vim.api.nvim_list_tabpages() > 1 then vim.cmd("tabclose") end
@@ -1776,13 +1826,56 @@ vim.keymap.set("n", "<A-l>", "<C-w>l",            { silent = true })
 vim.keymap.set("t", "<A-h>", "<C-\\><C-n><C-w>h", { silent = true })
 vim.keymap.set("t", "<A-l>", "<C-\\><C-n><C-w>l", { silent = true })
 
--- OpenCode AI panel with live watch
+-- Detect project root directory
+local function get_project_root()
+    local buf = vim.api.nvim_get_current_buf()
+    local buf_path = vim.api.nvim_buf_get_name(buf)
+    local buf_dir = vim.fn.fnamemodify(buf_path, ":p:h")
+    if buf_dir == "" then buf_dir = vim.fn.getcwd() end
+
+    -- 1. LSP workspace root
+    local clients = vim.lsp.get_clients({ bufnr = buf })
+    if #clients > 0 then
+        local lsp_root = clients[1].config.root_dir
+        if lsp_root and lsp_root ~= "" then
+            return lsp_root
+        end
+    end
+
+    -- 2. Walk up from buffer dir looking for .git
+    local function has_marker(dir, markers)
+        for _, marker in ipairs(markers) do
+            local path = dir .. "\\" .. marker
+            if vim.fn.isdirectory(path) == 1 or vim.fn.filereadable(path) == 1 then
+                return true
+            end
+        end
+        return false
+    end
+
+    local markers = { ".git", "package.json", "Cargo.toml", "pyproject.toml",
+                      "go.mod", "Makefile", "CMakeLists.txt", "composer.json",
+                      ".project", ".solution", "SLN" }
+
+    local search_dir = buf_dir
+    local last = ""
+    while search_dir ~= last do
+        if has_marker(search_dir, markers) then
+            return search_dir
+        end
+        last = search_dir
+        search_dir = vim.fn.fnamemodify(search_dir, ":h")
+    end
+
+    return buf_dir
+end
+
+-- OpenCode AI panel with project root
 vim.keymap.set("n", "<leader>ai", function()
-    local cwd = vim.fn.expand("%:p:h")
-    if cwd == "" then cwd = vim.fn.getcwd() end
+    local cwd = get_project_root()
     local fname = vim.fn.expand("%:t")
     if fname ~= "" then
-        vim.api.nvim_echo({ { "OpenCode watching: " .. fname, "None" } }, false, {})
+        vim.api.nvim_echo({ { "OpenCode (" .. cwd .. ") watching: " .. fname, "None" } }, false, {})
     end
     require("toggleterm.terminal").Terminal:new({
         cmd       = "cd /d \"" .. cwd .. "\" & opencode",
@@ -1797,7 +1890,7 @@ vim.keymap.set("n", "<leader>ai", function()
             vim.api.nvim_echo({ { "OpenCode closed. Changes saved to disk.", "None" } }, false, {})
         end,
     }):toggle()
-end, { silent = true, desc = "Open OpenCode AI in current file's directory" })
+end, { silent = true, desc = "Open OpenCode AI in project root" })
 
 -- Terminal scrolling (for OpenCode panel etc.)
 vim.keymap.set("t", "<C-Up>",   "<C-\\><C-N><C-Up>",   { silent = true, desc = "Scroll terminal up" })
@@ -1812,6 +1905,7 @@ apply_keybind_mode(DD.keybind_mode)
 
 apply_autosave(DD.autosave)
 apply_lsp(DD.lsp_enabled)
+apply_follow_mode(DD.follow_mode)
 
 vim.api.nvim_create_autocmd("BufLeave", {
     callback = function()
