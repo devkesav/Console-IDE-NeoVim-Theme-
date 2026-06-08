@@ -1895,21 +1895,89 @@ vim.defer_fn(function()
     end
 end, 800)
 
--- Nerd Font check — warn once if no Nerd Font is installed
+local function show_nerd_font_popup()
+    local lines = {
+        "",
+        "  ╔════════════════════════════════════════════════════════════╗",
+        "  ║              Nerd Font Not Found                         ║",
+        "  ╚════════════════════════════════════════════════════════════╝",
+        "",
+        "  Icons require a Nerd Font to be installed.",
+        "  Without it, icons will show as empty boxes (�).",
+        "",
+        "  Press  y  to install JetBrainsMono NFM via winget",
+        "  Press  l  to remind later",
+        "  Press  d  to dismiss permanently",
+        "",
+    }
+    local buf = vim.api.nvim_create_buf(false, true)
+    vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+    vim.api.nvim_buf_set_option(buf, "modifiable", false)
+    vim.api.nvim_buf_set_option(buf, "bufhidden", "wipe")
+
+    local width = 60
+    local height = #lines + 2
+    local ui = vim.api.nvim_list_uis()[1]
+    local row = math.floor(((ui and ui.height or 24) - height) / 2)
+    local col = math.floor(((ui and ui.width or 80) - width) / 2)
+
+    local win = vim.api.nvim_open_win(buf, true, {
+        relative = "editor",
+        width = width,
+        height = height,
+        row = row,
+        col = col,
+        style = "minimal",
+        border = "rounded",
+    })
+    vim.api.nvim_win_set_option(win, "winhl", "NormalFloat:Normal")
+
+    local close = function()
+        pcall(vim.api.nvim_win_close, win, true)
+        pcall(vim.api.nvim_buf_delete, buf, { force = true })
+    end
+
+    local save_later = function()
+        local ts_path = nvim_dir .. "/.console_ide_update_later"
+        io.open(ts_path, "w"):write(tostring(vim.loop.now() + 86400000))
+        close()
+    end
+
+    vim.keymap.set("n", "y", function()
+        close()
+        vim.api.nvim_echo({ { "Installing JetBrainsMono Nerd Font...", "None" } }, false, {})
+        vim.fn.system("winget install DEVCOM.JetBrainsMonoNerdFont --accept-source-agreements --accept-package-agreements")
+        if vim.v.shell_error == 0 then
+            vim.api.nvim_echo({ { "Installed! Restart Windows Terminal to see icons.", "None" } }, false, {})
+            vim.cmd("redraw!")
+        else
+            vim.api.nvim_echo({ { "Install failed. Run :Customize and press [5] to retry.", "ErrorMsg" } }, false, {})
+        end
+    end, { buffer = buf, silent = true, nowait = true })
+
+    vim.keymap.set("n", "l", function()
+        save_later()
+    end, { buffer = buf, silent = true, nowait = true })
+
+    vim.keymap.set("n", "d", close, { buffer = buf, silent = true, nowait = true })
+    vim.keymap.set("n", "q", close, { buffer = buf, silent = true, nowait = true })
+    vim.keymap.set("n", "<Esc>", close, { buffer = buf, silent = true, nowait = true })
+end
+
+-- Nerd Font check — popup on first launch if no Nerd Font is installed
 vim.defer_fn(function()
     if vim.g.console_ide_nerd_checked then return end
     vim.g.console_ide_nerd_checked = true
     local key = "HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Fonts"
     local result = vim.fn.system('powershell -c "Get-ItemProperty -Path ' .. key .. ' 2>$null | ForEach-Object { $_.PSObject.Properties | Where-Object { $_.Name -match \\\"(Nerd| NF[MP]? )\\\" } } | Select-Object -First 1"')
     if result == nil or result:match("^%s*$") then
-        vim.defer_fn(function()
-            vim.api.nvim_echo({
-                { "Nerd Font not detected — icons may show as ", "None" },
-                { "�", "WarningMsg" },
-                { ". Run ", "None" },
-                { ":Customize", "Title" },
-                { " to install and configure.", "None" },
-            }, false, {})
-        end, 100)
+        local ts_path = nvim_dir .. "/.console_ide_update_later"
+        local f = io.open(ts_path, "r")
+        if f then
+            local ts = tonumber(f:read("*a"))
+            f:close()
+            if ts and vim.loop.now() < ts then return end
+        end
+        vim.defer_fn(show_nerd_font_popup, 100)
     end
 end, 2000)
