@@ -57,7 +57,7 @@ Install these **before** setting up Console IDE:
 
 ### Optional (recommended)
 
-- A [Nerd Font](https://www.nerdfonts.com/) for icon rendering
+- A [Nerd Font](https://www.nerdfonts.com/) for icon rendering (auto-installed by `setup.ps1`)
 - [lazygit](https://github.com/jesseduffield/lazygit) for the `<leader>g` git UI
 
 ## Installation
@@ -72,7 +72,11 @@ Rename-Item "$env:LOCALAPPDATA\nvim-data" "$env:LOCALAPPDATA\nvim-data.bak" -Err
 # 2. Clone the repo
 git clone https://github.com/devkesav/Console-IDE-NeoVim-Theme-.git "$env:LOCALAPPDATA\nvim"
 
-# 3. Launch Neovim — plugins will auto-install
+# 3. (Recommended) Run setup script to install Nerd Font & configure terminal
+#    Run as Administrator:
+#    powershell -ExecutionPolicy Bypass -File "$env:LOCALAPPDATA\nvim\setup.ps1"
+
+# 4. Launch Neovim — plugins will auto-install
 nvim
 ```
 
@@ -267,9 +271,11 @@ Three themes available:
 
 ```
 ~/.config/nvim/          # or %LOCALAPPDATA%\nvim on Windows
-├── init.lua             # Single-file configuration (~1870 lines)
+├── init.lua             # Single-file configuration (~1990 lines)
 ├── lazy-lock.json       # Plugin version lockfile (auto-managed)
 ├── AGENTS.md            # Instructions for AI agents
+├── windows-terminal.json  # Windows Terminal font config snippet (merge manually)
+├── setup.ps1            # One-click setup script (font install + terminal config)
 └── README.md            # This file
 ```
 

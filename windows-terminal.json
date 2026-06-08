@@ -1,0 +1,8 @@
+{
+    "profiles": {
+        "defaults": {
+            "fontFace": "JetBrainsMono NFM",
+            "fontSize": 11
+        }
+    }
+}
