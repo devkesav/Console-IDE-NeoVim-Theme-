@@ -28,7 +28,7 @@ local DD = {
     -- "vim" = pure Vim binds,  "vscode" = VSCode-style binds
     keybind_mode  = "vim",
     highlight_yank= true,
-    guifont       = "JetBrainsMono Nerd Font Mono:h11",
+    guifont       = "JetBrainsMono NFM:h11",
 }
 
 -- ── Core editor options ───────────────────────────────────────────────────
@@ -1348,12 +1348,12 @@ vim.api.nvim_create_user_command("SetFont", function(opts)
     vim.opt.guifont = font
     vim.api.nvim_echo({ { "Font set to: " .. font, "None" } }, false, {})
     vim.cmd("redraw!")
-end, { nargs = "?", desc = "Set GUI font (e.g. :SetFont JetBrainsMono Nerd Font Mono:h11)" })
+end, { nargs = "?", desc = "Set GUI font (e.g. :SetFont JetBrainsMono NFM:h11)" })
 
 local function check_nerd_font()
     local installed = {}
     local key = "HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Fonts"
-    local fonts = vim.fn.system('powershell -c "Get-ItemProperty -Path ' .. key .. ' 2>$null | ForEach-Object { $_.PSObject.Properties | Where-Object { $_.Name -match \\\"nerd\\\" } } | ForEach-Object { $_.Name }"')
+    local fonts = vim.fn.system('powershell -c "Get-ItemProperty -Path ' .. key .. ' 2>$null | ForEach-Object { $_.PSObject.Properties | Where-Object { $_.Name -match \\\"(Nerd| NF[MP]? |^JetBrains.* NF\\\\)\\\" } } | ForEach-Object { $_.Name }"')
     for line in fonts:gmatch("[^\r\n]+") do
         if line ~= "" then table.insert(installed, line) end
     end
@@ -1394,8 +1394,8 @@ vim.api.nvim_create_user_command("Customize", function()
         "",
     }
     if not has_nerd then
-        table.insert(lines, 8, "  ⚠  Install JetBrainsMono Nerd Font for icons:")
-        table.insert(lines, 9, "       winget install DEVCOM.JetBrainsMonoNerdFont")
+        table.insert(lines, 8, "  ⚠  Install Nerd Font for icons:")
+        table.insert(lines, 9, "       Press [5] or run: winget install DEVCOM.JetBrainsMonoNerdFont")
         table.insert(lines, 10, "")
     end
 
@@ -1442,7 +1442,7 @@ vim.api.nvim_create_user_command("Customize", function()
 
     vim.keymap.set("n", "2", function()
         pcall(vim.api.nvim_win_close, win, true)
-        local font = vim.fn.input("Font name (e.g. JetBrainsMono Nerd Font Mono:h11): ", vim.o.guifont)
+        local font = vim.fn.input("Font name (e.g. JetBrainsMono NFM:h11): ", vim.o.guifont)
         if font ~= "" then
             DD.guifont = font
             vim.opt.guifont = font
@@ -1876,7 +1876,7 @@ vim.defer_fn(function()
     if vim.g.console_ide_nerd_checked then return end
     vim.g.console_ide_nerd_checked = true
     local key = "HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Fonts"
-    local result = vim.fn.system('powershell -c "Get-ItemProperty -Path ' .. key .. ' 2>$null | ForEach-Object { $_.PSObject.Properties | Where-Object { $_.Name -match \\\"nerd\\\" } } | Select-Object -First 1"')
+    local result = vim.fn.system('powershell -c "Get-ItemProperty -Path ' .. key .. ' 2>$null | ForEach-Object { $_.PSObject.Properties | Where-Object { $_.Name -match \\\"(Nerd| NF[MP]? )\\\" } } | Select-Object -First 1"')
     if result == nil or result:match("^%s*$") then
         vim.defer_fn(function()
             vim.api.nvim_echo({
