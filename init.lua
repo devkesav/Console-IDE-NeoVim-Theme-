@@ -29,7 +29,35 @@ local DD = {
     keybind_mode  = "vim",
     highlight_yank= true,
     guifont       = "JetBrainsMono NFM:h11",
+    zen_mode      = false,
+    live_watch    = true,
 }
+
+-- ── Persistent settings ──────────────────────────────────────────────────
+local state_path = vim.fn.stdpath("data") .. "/console_ide_state.json"
+
+local function save_state()
+    local f = io.open(state_path, "w")
+    if f then
+        f:write(vim.fn.json_encode(DD))
+        f:close()
+    end
+end
+
+local function load_state()
+    local f = io.open(state_path, "r")
+    if f then
+        local ok, data = pcall(vim.fn.json_decode, f:read("*a"))
+        f:close()
+        if type(data) == "table" then
+            for k, v in pairs(data) do
+                DD[k] = v
+            end
+        end
+    end
+end
+
+load_state()
 
 -- ── Core editor options ───────────────────────────────────────────────────
 vim.opt.number         = true
@@ -329,6 +357,36 @@ end
         end,
     },
 
+    -- Git in native buffers (blame, log, diff, status)
+    {
+        "tpope/vim-fugitive",
+        cmd = { "G", "Gvdiffsplit", "Gedit", "Glog", "Gblame" },
+        keys = {
+            { "<leader>gs", "<cmd>G<CR>",            desc = "Git status" },
+            { "<leader>gl", "<cmd>G log<CR>",         desc = "Git log" },
+            { "<leader>gb", "<cmd>G blame<CR>",       desc = "Git blame" },
+            { "<leader>gd", "<cmd>Gvdiffsplit<CR>",   desc = "Git diff" },
+        },
+    },
+
+    -- GitHub integration (PRs, issues, reviews, gists)
+    {
+        "pwntester/octo.nvim",
+        dependencies = { "nvim-lua/plenary.nvim", "nvim-telescope/telescope.nvim" },
+        cmd = { "Octo" },
+        keys = {
+            { "<leader>ghr", "<cmd>Octo pr list<CR>", desc = "GitHub PR list" },
+            { "<leader>ghi", "<cmd>Octo issue list<CR>", desc = "GitHub issue list" },
+            { "<leader>ghc", "<cmd>Octo gist list<CR>", desc = "GitHub gist list" },
+        },
+        config = function()
+            require("octo").setup({
+                default_remote = { "origin" },
+                picker = "telescope",
+            })
+        end,
+    },
+
     -- Error lens (inline diagnostics)
     {
         "chikko80/error-lens.nvim",
@@ -478,11 +536,19 @@ local keybinds_vim = {
     { "Editor",        "SPC e",     "Toggle File Tree",                1 },
     { "Editor",        "SPC t",     "Toggle Terminal",                 1 },
     { "Editor",        "SPC ai",    "Open OpenCode AI",                1 },
+    { "Editor",        "SPC gs",    "Git status (fugitive)",           1 },
+    { "Editor",        "SPC gl",    "Git log",                         1 },
+    { "Editor",        "SPC gb",    "Git blame",                       1 },
+    { "Editor",        "SPC gd",    "Git diff",                        1 },
+    { "Editor",        "SPC ghr",   "GitHub PR list",                  2 },
+    { "Editor",        "SPC ghi",   "GitHub issues",                   2 },
+    { "Editor",        "SPC ghc",   "GitHub gists",                    2 },
     { "Editor",        "SPC g",     "Open Lazygit",                    1 },
     { "Editor",        "SPC pv",    "View compiled PDF",               2 },
     { "Editor",        "SPC fi",    "Submit feedback (GitHub Issues)", 2 },
     { "Editor",        "SPC s",     "Open Settings",                   1 },
     { "Editor",        "SPC uc",    "Customize theme, font & icons",    2 },
+    { "Editor",        "SPC z",     "Toggle Zen Mode",                 2 },
     { "Editor",        "SPC h",     "Open Command Palette",            1 },
     { "Navigation",    "Tab",       "Next Buffer",                     1 },
     { "Navigation",    "S-Tab",     "Previous Buffer",                 1 },
@@ -518,8 +584,16 @@ local keybinds_vscode = {
     { "Editor",        "Ctrl `",    "Toggle Terminal",                 1 },
     { "Editor",        "SPC ai",    "Open OpenCode AI",                1 },
     { "Editor",        "Ctrl ,",    "Open Settings",                   1 },
+    { "Editor",        "SPC gs",    "Git status (fugitive)",           1 },
+    { "Editor",        "SPC gl",    "Git log",                         1 },
+    { "Editor",        "SPC gb",    "Git blame",                       1 },
+    { "Editor",        "SPC gd",    "Git diff",                        1 },
+    { "Editor",        "SPC ghr",   "GitHub PR list",                  2 },
+    { "Editor",        "SPC ghi",   "GitHub issues",                   2 },
+    { "Editor",        "SPC ghc",   "GitHub gists",                    2 },
     { "Editor",        "SPC fi",    "Submit feedback (GitHub Issues)", 2 },
     { "Editor",        "SPC uc",    "Customize theme, font & icons",    2 },
+    { "Editor",        "SPC z",     "Toggle Zen Mode",                 2 },
     { "Editor",        "SPC g",     "Open Lazygit",                    1 },
     { "Navigation",    "Ctrl Tab",  "Next Buffer",                     1 },
     { "Navigation",    "Ctrl S-Tab","Previous Buffer",                 1 },
@@ -1064,6 +1138,13 @@ local function apply_keybind_mode(m)
         set_extra("n", "<F2>",      vim.lsp.buf.rename,           "Rename symbol")
         set_extra("n", "<C-.>",     vim.lsp.buf.code_action,      "Code action")
         set_extra("n", "K",          vim.lsp.buf.hover,            "Hover docs")
+        set_extra("n", "<leader>gs", ":G<CR>",                    "Git status")
+        set_extra("n", "<leader>gl", ":G log<CR>",                "Git log")
+        set_extra("n", "<leader>gb", ":G blame<CR>",              "Git blame")
+        set_extra("n", "<leader>gd", ":Gvdiffsplit<CR>",          "Git diff")
+        set_extra("n", "<leader>ghr", ":Octo pr list<CR>",        "GitHub PRs")
+        set_extra("n", "<leader>ghi", ":Octo issue list<CR>",     "GitHub issues")
+        set_extra("n", "<leader>ghc", ":Octo gist list<CR>",      "GitHub gists")
         set_extra("n", "<leader>fi", ":Feedback<CR>",              "GitHub Issues feedback")
         set_extra("n", "<leader>uc", ":Customize<CR>",            "Customize theme, font & icons")
         set_extra("n", "<S-A-f>",   function()
@@ -1112,6 +1193,27 @@ local function apply_theme(t)
             pcall(vim.cmd.colorscheme, "catppuccin")
             vim.g.catppuccin_flavour = "mocha"
         end
+    end
+end
+
+local function apply_zen_mode(v)
+    if v then
+        vim.opt.number = false
+        vim.opt.relativenumber = false
+        pcall(vim.cmd, "LualineDisable")
+        vim.opt.showtabline = 0
+        pcall(vim.cmd, "IBLDisable")
+        pcall(vim.cmd, "NvimTreeClose")
+        vim.opt.wrap = true
+        vim.opt.colorcolumn = "80"
+    else
+        vim.opt.number = DD.linenr
+        vim.opt.relativenumber = DD.relativenr
+        pcall(vim.cmd, DD.lualine and "LualineEnable" or "LualineDisable")
+        vim.opt.showtabline = DD.bufferline and 2 or 0
+        pcall(vim.cmd, DD.ibl and "IBLEnable" or "IBLDisable")
+        vim.opt.wrap = DD.wordwrap
+        vim.opt.colorcolumn = ""
     end
 end
 
@@ -1166,6 +1268,7 @@ end
 local function toggle_option(key, apply_fn)
     DD[key] = not DD[key]
     if apply_fn then apply_fn(DD[key]) end
+    save_state()
 end
 
 local toggle_cmds = {
@@ -1196,6 +1299,8 @@ local toggle_cmds = {
         end
     end },
     whichkey   = { desc = "Which-key hints",     fn = nil },
+    zen_mode   = { desc = "Zen mode",            fn = function(v) apply_zen_mode(v) end },
+    live_watch = { desc = "Live watch",          fn = nil },
 }
 
 vim.api.nvim_create_user_command("SettingsStatus", function()
@@ -1223,6 +1328,8 @@ vim.api.nvim_create_user_command("SettingsStatus", function()
         { desc = "OpenCode panel",       key = "opencode",      type = "toggle", cmd = ":ToggleOpencode",       usage = "Toggle OpenCode panel ON/OFF" },
         { desc = "Treesitter",           key = "treesitter",    type = "toggle", cmd = ":ToggleTreesitter",     usage = "Toggle Treesitter highlighting ON/OFF" },
         { desc = "Which-key hints",      key = "whichkey",      type = "toggle", cmd = ":ToggleWhichkey",       usage = "Toggle which-key hints ON/OFF" },
+        { desc = "Zen mode",             key = "zen_mode",      type = "toggle", cmd = ":ToggleZen_mode",        usage = "Toggle distraction-free zen mode ON/OFF" },
+        { desc = "Live watch",           key = "live_watch",    type = "toggle", cmd = ":ToggleLive_watch",      usage = "Auto-reload file when changed on disk" },
         { desc = "Tab width",            key = "tabwidth",      type = "setter", cmd = ":SetTabWidth {2-8}",     fn = function(v) local n = tonumber(v); if n and n >= 2 and n <= 8 then DD.tabwidth = n; vim.opt.tabstop = n; vim.opt.shiftwidth = n end end },
         { desc = "OC width",             key = "oc_width",      type = "setter", cmd = ":SetOCWidth {30-90}",    fn = function(v) local n = tonumber(v); if n and n >= 30 and n <= 90 then DD.oc_width = n end end },
         { desc = "Theme",                key = "theme",         type = "setter", cmd = ":SetTheme {dark|light|mocha}", cycle = { "dark", "light", "mocha" }, fn = function(v) DD.theme = v; apply_theme(v) end },
@@ -1315,6 +1422,7 @@ vim.api.nvim_create_user_command("SetTheme", function(opts)
     end
     DD.theme = t
     apply_theme(t)
+    save_state()
     vim.api.nvim_echo({ { "Theme: " .. t, "None" } }, false, {})
 end, { nargs = 1, desc = "Set theme: dark, light, or mocha" })
 
@@ -1326,6 +1434,7 @@ vim.api.nvim_create_user_command("SetTabWidth", function(opts)
     end
     DD.tabwidth = n
     vim.opt.tabstop = n; vim.opt.shiftwidth = n
+    save_state()
     vim.api.nvim_echo({ { "Tab width: " .. n, "None" } }, false, {})
 end, { nargs = 1, desc = "Set tab/indent width (2-8)" })
 
@@ -1336,6 +1445,7 @@ vim.api.nvim_create_user_command("SetOCWidth", function(opts)
         return
     end
     DD.oc_width = n
+    save_state()
     vim.api.nvim_echo({ { "OpenCode panel width: " .. n, "None" } }, false, {})
 end, { nargs = 1, desc = "Set OpenCode panel width (30-90)" })
 
@@ -1347,6 +1457,7 @@ vim.api.nvim_create_user_command("SetKeybindMode", function(opts)
     end
     DD.keybind_mode = m
     apply_keybind_mode(m)
+    save_state()
     vim.api.nvim_echo({ { "Keybind mode: " .. m, "None" } }, false, {})
 end, { nargs = 1, desc = "Set keybind mode: vim or vscode" })
 
@@ -1358,6 +1469,7 @@ vim.api.nvim_create_user_command("SetFont", function(opts)
     end
     DD.guifont = font
     vim.opt.guifont = font
+    save_state()
     vim.api.nvim_echo({ { "Font set to: " .. font, "None" } }, false, {})
     vim.cmd("redraw!")
 end, { nargs = "?", desc = "Set GUI font (e.g. :SetFont JetBrainsMono NFM:h11)" })
@@ -1387,7 +1499,7 @@ vim.api.nvim_create_user_command("Customize", function()
     local lines = {
         "",
         "  ╔════════════════════════════════════════════════════════════╗",
-        "  ║                  Customize Console IDE                    ║",
+        "  ║                  Customize Console IDE                     ║",
         "  ╚════════════════════════════════════════════════════════════╝",
         "",
         "  Theme        : " .. DD.theme,
@@ -1567,7 +1679,7 @@ vim.api.nvim_create_autocmd("BufReadCmd", {
         local lines = {
             "",
             "  ╔══════════════════════════════════════════════════════════════════╗",
-            "  ║                     PDF Preview Not Available                   ║",
+            "  ║                     PDF Preview Not Available                    ║",
             "  ╚══════════════════════════════════════════════════════════════════╝",
             "",
             "  This file is a binary PDF and cannot be displayed in Neovim.",
@@ -1621,6 +1733,10 @@ vim.keymap.set("n", "<leader>h",  OpenCommandPalette,  { silent = true, desc = "
 vim.keymap.set("n", "<leader>pv", ":PdfView<CR>",     { silent = true, desc = "View compiled PDF" })
 vim.keymap.set("n", "<leader>fi", ":Feedback<CR>",    { silent = true, desc = "Submit feedback via GitHub Issues" })
 vim.keymap.set("n", "<leader>uc", ":Customize<CR>",   { silent = true, desc = "Customize theme, font, and icons" })
+vim.keymap.set("n", "<leader>z", function()
+    toggle_option("zen_mode", apply_zen_mode)
+    vim.api.nvim_echo({ { "Zen mode: " .. bool_str(DD.zen_mode), "None" } }, false, {})
+end, { silent = true, desc = "Toggle zen mode" })
 
 vim.keymap.set("n", "<leader>g", function()
     require("toggleterm.terminal").Terminal:new({
@@ -1649,10 +1765,16 @@ vim.keymap.set("n", "<A-l>", "<C-w>l",            { silent = true })
 vim.keymap.set("t", "<A-h>", "<C-\\><C-n><C-w>h", { silent = true })
 vim.keymap.set("t", "<A-l>", "<C-\\><C-n><C-w>l", { silent = true })
 
--- OpenCode AI panel
+-- OpenCode AI panel with live watch
 vim.keymap.set("n", "<leader>ai", function()
+    local cwd = vim.fn.expand("%:p:h")
+    if cwd == "" then cwd = vim.fn.getcwd() end
+    local fname = vim.fn.expand("%:t")
+    if fname ~= "" then
+        vim.api.nvim_echo({ { "OpenCode watching: " .. fname, "None" } }, false, {})
+    end
     require("toggleterm.terminal").Terminal:new({
-        cmd       = "opencode",
+        cmd       = "cd /d \"" .. cwd .. "\" & opencode",
         direction = "vertical",
         size      = DD.oc_width,
         hidden    = true,
@@ -1660,8 +1782,11 @@ vim.keymap.set("n", "<leader>ai", function()
             vim.api.nvim_win_set_width(0, DD.oc_width)
             vim.cmd("startinsert!")
         end,
+        on_close  = function()
+            vim.api.nvim_echo({ { "OpenCode closed. Changes saved to disk.", "None" } }, false, {})
+        end,
     }):toggle()
-end, { silent = true, desc = "Open OpenCode AI" })
+end, { silent = true, desc = "Open OpenCode AI in current file's directory" })
 
 -- Terminal scrolling (for OpenCode panel etc.)
 vim.keymap.set("t", "<C-Up>",   "<C-\\><C-N><C-Up>",   { silent = true, desc = "Scroll terminal up" })
@@ -1794,7 +1919,7 @@ local function show_update_popup(behind)
     local lines = {
         "",
         "  ╔═══════════════════════════════════════════════════╗",
-        "  ║              UPDATE AVAILABLE                    ║",
+        "  ║              UPDATE AVAILABLE                     ║",
         "  ╚═══════════════════════════════════════════════════╝",
         "",
         string.format("  Console IDE is %d commit%s behind.", behind, behind > 1 and "s" or ""),
@@ -1843,7 +1968,7 @@ local function show_update_popup(behind)
             local updated_lines = {
                 "",
                 "  ╔═══════════════════════════════════════════════════╗",
-                "  ║              UPDATE INSTALLED                   ║",
+                "  ║              UPDATE INSTALLED                     ║",
                 "  ╚═══════════════════════════════════════════════════╝",
                 "",
                 "  Restart Neovim for changes to take effect.",
@@ -1906,7 +2031,7 @@ local function show_nerd_font_popup()
     local lines = {
         "",
         "  ╔════════════════════════════════════════════════════════════╗",
-        "  ║              Nerd Font Not Found                         ║",
+        "  ║              Nerd Font Not Found                           ║",
         "  ╚════════════════════════════════════════════════════════════╝",
         "",
         "  Icons require a Nerd Font to be installed.",

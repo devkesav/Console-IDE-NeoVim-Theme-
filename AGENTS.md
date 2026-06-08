@@ -17,6 +17,8 @@ Single-file Neovim configuration at `init.lua`. Entrypoint for all changes.
 
 - **vimtex** — full LaTeX suite: compilation, PDF viewing, forward/inverse search
 - **texlab** — LaTeX LSP server (auto-installed by mason)
+- **vim-fugitive** — Git operations in native buffers (status, log, blame, diff)
+- **octo.nvim** — GitHub PR, issue, and gist management
 
 ## Keymaps
 
@@ -32,6 +34,13 @@ Single-file Neovim configuration at `init.lua`. Entrypoint for all changes.
 | `<leader>pv` | Open compiled PDF in system default viewer |
 | `<leader>fi` | Submit feedback via GitHub Issues |
 | `<leader>uc` | Customize theme, font & icons |
+| `<leader>gs` | Git status (fugitive) |
+| `<leader>gl` | Git log |
+| `<leader>gb` | Git blame |
+| `<leader>gd` | Git diff (vertical split) |
+| `<leader>ghr` | GitHub PR list |
+| `<leader>ghi` | GitHub issues |
+| `<leader>ghc` | GitHub gists |
 | `<Tab>` / `<S-Tab>` | BufferLine cycle next/prev |
 | `<C-x/c/v>` (n/v) | Clipboard cut/copy/paste via `"+` register |
 | `<A-h>` / `<A-l>` (n/t) | Navigate windows left/right |

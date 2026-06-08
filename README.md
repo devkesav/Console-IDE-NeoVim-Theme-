@@ -156,7 +156,14 @@ When you start Neovim for the first time:
 | `<leader>e` / `<C-e>` | Toggle File Tree |
 | `<leader>t` / `<C-t>` | Toggle Terminal |
 | `<leader>ai` | Open OpenCode AI |
+| `<leader>gs` | Git Status (fugitive) |
+| `<leader>gl` | Git Log |
+| `<leader>gb` | Git Blame |
+| `<leader>gd` | Git Diff |
 | `<leader>g` | Open Lazygit |
+| `<leader>ghr` | GitHub PR list |
+| `<leader>ghi` | GitHub issue list |
+| `<leader>ghc` | GitHub gist list |
 | `<leader>s` / `<C-,>` | Open Settings |
 | `<leader>pv` | View compiled PDF |
 | `<leader>fi` | Submit feedback (GitHub Issues) |
@@ -183,6 +190,13 @@ Switch with `:SetKeybindMode vscode`:
 | `<Tab>` / `<C-Tab>` | Next / Previous Buffer |
 | `<A-Up>` / `<A-Down>` | Move line up/down |
 | `<leader>pv` | View compiled PDF |
+| `<leader>gs` | Git Status |
+| `<leader>gl` | Git Log |
+| `<leader>gb` | Git Blame |
+| `<leader>gd` | Git Diff |
+| `<leader>ghr` | GitHub PR list |
+| `<leader>ghi` | GitHub issue list |
+| `<leader>ghc` | GitHub gist list |
 | `<leader>fi` | Submit feedback (GitHub Issues) |
 | `<leader>uc` | Customize theme, font & icons |
 
@@ -271,7 +285,7 @@ Three themes available:
 
 ```
 ~/.config/nvim/          # or %LOCALAPPDATA%\nvim on Windows
-├── init.lua             # Single-file configuration (~1990 lines)
+├── init.lua             # Single-file configuration (~2110 lines)
 ├── lazy-lock.json       # Plugin version lockfile (auto-managed)
 ├── AGENTS.md            # Instructions for AI agents
 ├── windows-terminal.json  # Windows Terminal font config snippet (merge manually)
@@ -482,6 +496,8 @@ Console IDE uses the following plugins (managed by Lazy.nvim):
 | [nvim-surround](https://github.com/kylechui/nvim-surround) | Surround editing |
 | [neoscroll](https://github.com/karb94/neoscroll.nvim) | Smooth scrolling |
 | [vimtex](https://github.com/lervag/vimtex) | LaTeX suite (compile, view, forward search) |
+| [vim-fugitive](https://github.com/tpope/vim-fugitive) | Git in native buffers (status, log, blame, diff) |
+| [octo.nvim](https://github.com/pwntester/octo.nvim) | GitHub PR, issue, and gist management |
 
 ## C Development Setup Guide
 
