@@ -7,6 +7,7 @@ local DD = {
     pyright       = true,
     clangd        = true,
     lua_ls        = true,
+    texlab        = true,
     nvim_cmp      = true,
     luasnip       = true,
     stylua        = true,
@@ -165,12 +166,27 @@ end
         config = function()
             vim.treesitter.language.register("lua", "lua")
             require("nvim-treesitter").setup({
-                ensure_installed = { "lua", "python", "c", "cpp", "javascript", "typescript", "html", "css", "json", "bash" },
+                ensure_installed = { "lua", "python", "c", "cpp", "javascript", "typescript", "html", "css", "json", "bash", "tex", "bib" },
                 highlight        = { enable = true },
                 indent           = { enable = true },
             })
         end,
     },
+
+    -- LaTeX + PDF support
+    {
+        "lervag/vimtex",
+        lazy = false,
+        config = function()
+            vim.g.vimtex_view_method = "general"
+            vim.g.vimtex_compiler_method = "latexmk"
+            vim.g.vimtex_compiler_latexmk = {
+                options = { "-pdf", "-shell-escape", "-interaction=nonstopmode", "-synctex=1" },
+            }
+        end,
+    },
+
+    -- (image.nvim skipped — not supported on Windows)
 
     -- Terminal
     {
@@ -214,7 +230,7 @@ end
         dependencies = { "williamboman/mason.nvim", "neovim/nvim-lspconfig" },
         config = function()
             require("mason-lspconfig").setup({
-                ensure_installed    = { "pyright", "clangd", "lua_ls" },
+                ensure_installed    = { "pyright", "clangd", "lua_ls", "texlab" },
                 automatic_installation = true,
             })
         end,
@@ -450,6 +466,8 @@ local keybinds_vim = {
     { "Editor",        "SPC t",     "Toggle Terminal",                 1 },
     { "Editor",        "SPC ai",    "Open OpenCode AI",                1 },
     { "Editor",        "SPC g",     "Open Lazygit",                    1 },
+    { "Editor",        "SPC pv",    "View compiled PDF",               2 },
+    { "Editor",        "SPC fi",    "Submit feedback (GitHub Issues)", 2 },
     { "Editor",        "SPC s",     "Open Settings",                   1 },
     { "Editor",        "SPC h",     "Open Command Palette",            1 },
     { "Navigation",    "Tab",       "Next Buffer",                     1 },
@@ -486,6 +504,7 @@ local keybinds_vscode = {
     { "Editor",        "Ctrl `",    "Toggle Terminal",                 1 },
     { "Editor",        "SPC ai",    "Open OpenCode AI",                1 },
     { "Editor",        "Ctrl ,",    "Open Settings",                   1 },
+    { "Editor",        "SPC fi",    "Submit feedback (GitHub Issues)", 2 },
     { "Editor",        "SPC g",     "Open Lazygit",                    1 },
     { "Navigation",    "Ctrl Tab",  "Next Buffer",                     1 },
     { "Navigation",    "Ctrl S-Tab","Previous Buffer",                 1 },
@@ -1028,6 +1047,7 @@ local function apply_keybind_mode(m)
         set_extra("n", "<F2>",      vim.lsp.buf.rename,           "Rename symbol")
         set_extra("n", "<C-.>",     vim.lsp.buf.code_action,      "Code action")
         set_extra("n", "K",          vim.lsp.buf.hover,            "Hover docs")
+        set_extra("n", "<leader>fi", ":Feedback<CR>",              "GitHub Issues feedback")
         set_extra("n", "<S-A-f>",   function()
             pcall(vim.lsp.buf.format, { async = true })
         end, "Format file")
@@ -1095,6 +1115,7 @@ local function apply_lsp(v)
     if DD.pyright then table.insert(servers, "pyright") end
     if DD.clangd  then table.insert(servers, "clangd")  end
     if DD.lua_ls  then table.insert(servers, "lua_ls")  end
+    if DD.texlab  then table.insert(servers, "texlab")  end
     if v and #servers > 0 then
         vim.lsp.enable(servers)
     elseif not v or #servers == 0 then
@@ -1146,6 +1167,7 @@ local toggle_cmds = {
     pyright    = { desc = "Pyright",             fn = function(v) if DD.lsp_enabled then apply_lsp(true) end end },
     clangd     = { desc = "Clangd",              fn = function(v) if DD.lsp_enabled then apply_lsp(true) end end },
     lua_ls     = { desc = "Lua language server", fn = function(v) if DD.lsp_enabled then apply_lsp(true) end end },
+    texlab     = { desc = "TexLab (LaTeX)",      fn = function(v) if DD.lsp_enabled then apply_lsp(true) end end },
     nvim_cmp   = { desc = "nvim-cmp",            fn = nil },
     luasnip    = { desc = "LuaSnip",             fn = nil },
     stylua     = { desc = "Stylua formatter",    fn = nil },
@@ -1176,6 +1198,7 @@ vim.api.nvim_create_user_command("SettingsStatus", function()
         { desc = "Pyright",              key = "pyright",       type = "toggle", cmd = ":TogglePyright",        usage = "Toggle Pyright LSP ON/OFF" },
         { desc = "Clangd",               key = "clangd",        type = "toggle", cmd = ":ToggleClangd",         usage = "Toggle clangd LSP ON/OFF" },
         { desc = "Lua language server",  key = "lua_ls",        type = "toggle", cmd = ":ToggleLua_ls",         usage = "Toggle Lua language server ON/OFF" },
+        { desc = "TexLab (LaTeX)",       key = "texlab",        type = "toggle", cmd = ":ToggleTexlab",          usage = "Toggle TexLab LaTeX LSP ON/OFF" },
         { desc = "nvim-cmp",             key = "nvim_cmp",      type = "toggle", cmd = ":ToggleNvim_cmp",       usage = "Toggle nvim-cmp completion ON/OFF" },
         { desc = "LuaSnip",              key = "luasnip",       type = "toggle", cmd = ":ToggleLuasnip",        usage = "Toggle LuaSnip snippets ON/OFF" },
         { desc = "Stylua formatter",     key = "stylua",        type = "toggle", cmd = ":ToggleStylua",         usage = "Toggle Stylua formatter ON/OFF" },
@@ -1310,6 +1333,96 @@ vim.api.nvim_create_user_command("SetKeybindMode", function(opts)
 end, { nargs = 1, desc = "Set keybind mode: vim or vscode" })
 
 -- ══════════════════════════════════════════════════════════════════════════
+--  PDF VIEWER  (opens in system-default PDF viewer)
+-- ══════════════════════════════════════════════════════════════════════════
+vim.api.nvim_create_user_command("PdfView", function(opts)
+    local pdf_file
+    local arg = opts.args
+    if arg ~= "" and vim.fn.filereadable(arg) == 1 then
+        pdf_file = arg
+    else
+        local base = vim.fn.expand("%:t:r")
+        for _, ext in ipairs({ ".pdf", ".PDF" }) do
+            local candidate = base .. ext
+            if vim.fn.filereadable(candidate) == 1 then
+                pdf_file = candidate
+                break
+            end
+        end
+        if not pdf_file then
+            vim.api.nvim_echo({ { "PDF not found for: " .. vim.fn.expand("%"), "ErrorMsg" } }, false, {})
+            return
+        end
+    end
+    vim.ui.open(vim.fn.fnamemodify(pdf_file, ":p"))
+    vim.api.nvim_echo({ { "Opening: " .. pdf_file, "None" } }, false, {})
+end, { nargs = "?", desc = "Open compiled PDF in system default viewer" })
+
+-- ══════════════════════════════════════════════════════════════════════════
+--  FEEDBACK  (opens GitHub Issues with system info pre-filled)
+-- ══════════════════════════════════════════════════════════════════════════
+local function urlencode(s)
+    return s:gsub("([^%w%.%- ])", function(c)
+        return ("%%%02X"):format(string.byte(c))
+    end):gsub(" ", "+")
+end
+
+vim.api.nvim_create_user_command("Feedback", function()
+    local nvim_ver = vim.version().major .. "." .. vim.version().minor .. "." .. vim.version().patch
+    local os_name = vim.loop.os_uname().sysname
+    local os_ver = vim.loop.os_uname().release
+    local config_ver = "v0.1.0"
+
+    local body = table.concat({
+        "",
+        "**Describe your feedback or issue**",
+        "",
+        "",
+        "---",
+        "**System info:**",
+        "- Console IDE: " .. config_ver,
+        "- Neovim: " .. nvim_ver,
+        "- OS: " .. os_name .. " " .. os_ver,
+        "- Shell: " .. (vim.o.shell or "unknown"),
+        "",
+    }, "\n")
+
+    local url = "https://github.com/devkesav/Console-IDE-NeoVim-Theme-/issues/new?body=" .. urlencode(body)
+    vim.ui.open(url)
+    vim.api.nvim_echo({ { "Opening GitHub Issues page in browser...", "None" } }, false, {})
+end, { desc = "Open GitHub Issues to submit feedback" })
+
+-- ══════════════════════════════════════════════════════════════════════════
+--  PDF GUARD  (show friendly message instead of raw binary)
+-- ══════════════════════════════════════════════════════════════════════════
+vim.api.nvim_create_autocmd("BufReadCmd", {
+    pattern = { "*.pdf", "*.PDF" },
+    callback = function()
+        local path = vim.fn.expand("%:p")
+        local lines = {
+            "",
+            "  ╔══════════════════════════════════════════════════════════════════╗",
+            "  ║                     PDF Preview Not Available                   ║",
+            "  ╚══════════════════════════════════════════════════════════════════╝",
+            "",
+            "  This file is a binary PDF and cannot be displayed in Neovim.",
+            "",
+            "  Press  <leader>pv  to open it in your system's default PDF viewer.",
+            "  Or run  :PdfView",
+            "",
+        }
+        vim.api.nvim_buf_set_lines(0, 0, -1, false, lines)
+        vim.bo.bufhidden = "wipe"
+        vim.bo.modifiable = false
+        vim.bo.filetype = "pdf"
+        vim.keymap.set("n", "<leader>pv", function()
+            vim.ui.open(path)
+            vim.api.nvim_echo({ { "Opening: " .. vim.fn.fnamemodify(path, ":t"), "None" } }, false, {})
+        end, { buffer = 0, silent = true, desc = "Open PDF in default viewer" })
+    end,
+})
+
+-- ══════════════════════════════════════════════════════════════════════════
 --  CORE KEYBINDS  (always active regardless of mode)
 -- ══════════════════════════════════════════════════════════════════════════
 vim.keymap.set("n", "<leader>e",  ":NvimTreeToggle<CR>",            { silent = true })
@@ -1324,6 +1437,8 @@ vim.keymap.set("n", "<leader>fb", ":Telescope buffers<CR>",         { silent = t
 vim.keymap.set("n", "<leader>s",  ":SettingsStatus<CR>",   { silent = true, desc = "Show settings status" })
 vim.keymap.set("n", "<C-,>",      ":SettingsStatus<CR>",   { silent = true, desc = "Show settings status" })
 vim.keymap.set("n", "<leader>h",  OpenCommandPalette,  { silent = true, desc = "Command palette" })
+vim.keymap.set("n", "<leader>pv", ":PdfView<CR>",     { silent = true, desc = "View compiled PDF" })
+vim.keymap.set("n", "<leader>fi", ":Feedback<CR>",    { silent = true, desc = "Submit feedback via GitHub Issues" })
 
 vim.keymap.set("n", "<leader>g", function()
     require("toggleterm.terminal").Terminal:new({
@@ -1454,3 +1569,151 @@ if vim.fn.filereadable(welcome_marker) == 0 then
         pcall(vim.api.nvim_buf_delete, buf, { force = true })
     end, welcome_ns)
 end
+
+-- ══════════════════════════════════════════════════════════════════════════
+--  UPDATE CHECKER  (checks GitHub for new commits)
+-- ══════════════════════════════════════════════════════════════════════════
+local nvim_dir = vim.fn.stdpath("config")
+local update_later_file = vim.fn.stdpath("data") .. "/.console_ide_update_later"
+local remind_after = 86400
+
+local function should_skip_check()
+    local f = io.open(update_later_file, "r")
+    if not f then return false end
+    local stored = tonumber(f:read("*a"))
+    f:close()
+    return stored and stored > os.time()
+end
+
+local function save_later()
+    local f = io.open(update_later_file, "w")
+    if f then
+        f:write(tostring(os.time() + remind_after))
+        f:close()
+    end
+end
+
+local function show_update_popup(behind)
+    local log_output = vim.fn.system({
+        "git", "-C", nvim_dir, "log", "--oneline",
+        string.format("HEAD..origin/master"),
+        "--no-decorate",
+    })
+    local log_lines = vim.split(vim.trim(log_output), "\n", { plain = true })
+    if #log_lines > 15 then
+        log_lines = vim.list_slice(log_lines, 1, 15)
+        table.insert(log_lines, "...")
+    end
+
+    local buf = vim.api.nvim_create_buf(false, true)
+    vim.bo[buf].buftype = "nofile"
+    vim.bo[buf].filetype = "console_ide_update"
+
+    local lines = {
+        "",
+        "  ╔═══════════════════════════════════════════════════╗",
+        "  ║              UPDATE AVAILABLE                    ║",
+        "  ╚═══════════════════════════════════════════════════╝",
+        "",
+        string.format("  Console IDE is %d commit%s behind.", behind, behind > 1 and "s" or ""),
+        "",
+    }
+    for _, l in ipairs(log_lines) do
+        table.insert(lines, "  " .. l)
+    end
+    table.insert(lines, "")
+    table.insert(lines, "  [y]  Yes       — Download & install now")
+    table.insert(lines, "  [l]  Later     — Remind me tomorrow")
+    table.insert(lines, "  [d]  Dismiss   — Don't ask again this session")
+    table.insert(lines, "")
+    vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+    vim.bo[buf].modifiable = false
+
+    local width, height = 60, #lines
+    local win = vim.api.nvim_open_win(buf, true, {
+        relative  = "editor",
+        width     = width,
+        height    = height,
+        row       = math.floor((vim.o.lines - height) / 2),
+        col       = math.floor((vim.o.columns - width) / 2),
+        style     = "minimal",
+        border    = "rounded",
+        title     = "  Update  ",
+        title_pos = "center",
+    })
+
+    local function close()
+        pcall(vim.api.nvim_win_close, win, true)
+        pcall(vim.api.nvim_buf_delete, buf, { force = true })
+    end
+
+    vim.keymap.set("n", "y", function()
+        vim.bo[buf].modifiable = true
+        vim.api.nvim_buf_set_lines(buf, 0, -1, false, {
+            "", "  Installing update...", "",
+        })
+        vim.bo[buf].modifiable = false
+        vim.cmd("redraw")
+        vim.fn.system({ "git", "-C", nvim_dir, "pull", "--ff-only" })
+        if vim.v.shell_error == 0 then
+            local updated_lines = {
+                "",
+                "  ╔═══════════════════════════════════════════════════╗",
+                "  ║              UPDATE INSTALLED                   ║",
+                "  ╚═══════════════════════════════════════════════════╝",
+                "",
+                "  Restart Neovim for changes to take effect.",
+                "",
+            }
+            for _, l in ipairs(log_lines) do
+                table.insert(updated_lines, "  " .. l)
+            end
+            table.insert(updated_lines, "")
+            table.insert(updated_lines, "  Press any key to exit")
+
+            vim.bo[buf].modifiable = true
+            vim.api.nvim_buf_set_lines(buf, 0, -1, false, updated_lines)
+            vim.bo[buf].modifiable = false
+
+            local ns = vim.api.nvim_create_namespace("update_dismiss")
+            vim.on_key(function()
+                vim.on_key(nil, ns)
+                close()
+            end, ns)
+        else
+            vim.bo[buf].modifiable = true
+            vim.api.nvim_buf_set_lines(buf, 0, -1, false, {
+                "", "  Update failed — check network or resolve conflicts.", "",
+            })
+            vim.bo[buf].modifiable = false
+            vim.keymap.set("n", "q", close, { buffer = buf, silent = true, nowait = true })
+            vim.keymap.set("n", "<Esc>", close, { buffer = buf, silent = true, nowait = true })
+        end
+    end, { buffer = buf, silent = true, nowait = true })
+
+    vim.keymap.set("n", "l", function()
+        save_later()
+        close()
+    end, { buffer = buf, silent = true, nowait = true })
+
+    vim.keymap.set("n", "d", close, { buffer = buf, silent = true, nowait = true })
+    vim.keymap.set("n", "q", close, { buffer = buf, silent = true, nowait = true })
+    vim.keymap.set("n", "<Esc>", close, { buffer = buf, silent = true, nowait = true })
+end
+
+-- Run check shortly after startup (non-blocking)
+vim.defer_fn(function()
+    if not vim.fn.isdirectory(nvim_dir .. "/.git") then return end
+    if should_skip_check() then return end
+
+    vim.fn.system({ "git", "-C", nvim_dir, "fetch", "origin", "--quiet" })
+    if vim.v.shell_error ~= 0 then return end
+
+    local behind_str = vim.fn.system({
+        "git", "-C", nvim_dir, "rev-list", "--count", "HEAD..origin/master",
+    })
+    local behind = tonumber(behind_str)
+    if behind and behind > 0 then
+        show_update_popup(behind)
+    end
+end, 800)

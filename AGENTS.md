@@ -13,6 +13,11 @@ Single-file Neovim configuration at `init.lua`. Entrypoint for all changes.
 - **Lockfile**: `lazy-lock.json` — auto-managed, do not edit manually
 - All config is inline in `init.lua`; there is no `lua/` directory
 
+## Added plugins
+
+- **vimtex** — full LaTeX suite: compilation, PDF viewing, forward/inverse search
+- **texlab** — LaTeX LSP server (auto-installed by mason)
+
 ## Keymaps
 
 | Binding | Action |
@@ -24,6 +29,8 @@ Single-file Neovim configuration at `init.lua`. Entrypoint for all changes.
 | `<leader>fb` | Telescope buffers |
 | `<leader>g` | Lazygit |
 | `<leader>ai` | Open OpenCode in vertical terminal split |
+| `<leader>pv` | Open compiled PDF in system default viewer |
+| `<leader>fi` | Submit feedback via GitHub Issues |
 | `<Tab>` / `<S-Tab>` | BufferLine cycle next/prev |
 | `<C-x/c/v>` (n/v) | Clipboard cut/copy/paste via `"+` register |
 | `<A-h>` / `<A-l>` (n/t) | Navigate windows left/right |
@@ -33,7 +40,7 @@ Single-file Neovim configuration at `init.lua`. Entrypoint for all changes.
 - Auto-save on `TextChanged` / `InsertLeave` (all writable named buffers)
 - Empty unnamed buffers auto-close on `BufLeave`
 - Tab completion maps `<Tab>` / `<S-Tab>` for nvim-cmp navigation
-- LSP servers auto-installed by mason: `pyright`, `clangd`, `lua_ls`
+- LSP servers auto-installed by mason: `pyright`, `clangd`, `lua_ls`, `texlab`
 - Only formatter configured: `stylua` (via none-ls.nvim)
 - **Live reload**: `autoread` + `checktime` on `FocusGained`/`BufEnter` + 1s timer — designed so external file writes (e.g. OpenCode) appear without manual `:e`
 - **None-ls quirk**: plugin `nvimtools/none-ls.nvim` exposes API as `require("null-ls")`, not `require("none-ls")`
