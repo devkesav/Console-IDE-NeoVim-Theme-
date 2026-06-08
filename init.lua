@@ -1719,9 +1719,17 @@ vim.api.nvim_create_autocmd("BufReadCmd", {
 --  CORE KEYBINDS  (always active regardless of mode)
 -- ══════════════════════════════════════════════════════════════════════════
 vim.keymap.set("n", "<leader>e",  ":NvimTreeToggle<CR>",            { silent = true })
-vim.keymap.set("n", "<leader>t",  ":ToggleTerm<CR>",                { silent = true })
+vim.keymap.set("n", "<leader>t", function()
+    local dir = vim.fn.expand("%:p:h")
+    if dir == "" then dir = vim.fn.getcwd() end
+    require("toggleterm.terminal").Terminal:new({ direction = "horizontal", size = 10, dir = dir }):toggle()
+end, { silent = true, desc = "Toggle terminal (file dir)" })
 vim.keymap.set("n", "<C-e>",      ":NvimTreeToggle<CR>",            { silent = true })
-vim.keymap.set("n", "<C-t>",      ":ToggleTerm<CR>",                { silent = true })
+vim.keymap.set("n", "<C-t>", function()
+    local dir = vim.fn.expand("%:p:h")
+    if dir == "" then dir = vim.fn.getcwd() end
+    require("toggleterm.terminal").Terminal:new({ direction = "horizontal", size = 10, dir = dir }):toggle()
+end, { silent = true, desc = "Toggle terminal (file dir)" })
 
 vim.keymap.set("n", "<leader>ff", ":Telescope find_files<CR>",      { silent = true })
 vim.keymap.set("n", "<leader>fg", ":Telescope live_grep<CR>",       { silent = true })
@@ -1739,9 +1747,12 @@ vim.keymap.set("n", "<leader>z", function()
 end, { silent = true, desc = "Toggle zen mode" })
 
 vim.keymap.set("n", "<leader>g", function()
+    local dir = vim.fn.expand("%:p:h")
+    if dir == "" then dir = vim.fn.getcwd() end
     require("toggleterm.terminal").Terminal:new({
         cmd       = "lazygit",
         direction = "tab",
+        dir       = dir,
         on_open   = function() vim.cmd("startinsert!") end,
         on_close  = function()
             if #vim.api.nvim_list_tabpages() > 1 then vim.cmd("tabclose") end
