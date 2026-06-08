@@ -29,6 +29,10 @@ No mouse. No distractions. Just you and your codebase.
 - **Settings Panel** (`:SettingsStatus`) — Tab-based interactive settings with toggle/setter commands
 - **First-launch Welcome** — Floating welcome popup on initial startup
 - **Session Persistence** — Lazy.nvim locks plugin versions in `lazy-lock.json`
+- **LaTeX Support** — vimtex for compilation, texlab LSP for autocomplete, treesitter for syntax highlighting
+- **PDF Viewer** (`<leader>pv`) — Opens compiled PDF in system default viewer; guard prevents raw binary display
+- **Update Checker** — Checks GitHub for new commits on startup (800ms defer), shows release notes popup with `y` to install
+- **Feedback** (`<leader>fi`) — Opens GitHub Issues page with pre-filled system info for bug reports
 
 ## Prerequisites
 
@@ -148,6 +152,8 @@ When you start Neovim for the first time:
 | `<leader>ai` | Open OpenCode AI |
 | `<leader>g` | Open Lazygit |
 | `<leader>s` / `<C-,>` | Open Settings |
+| `<leader>pv` | View compiled PDF |
+| `<leader>fi` | Submit feedback (GitHub Issues) |
 | `<leader>h` | Command Palette |
 | `<Tab>` / `<S-Tab>` | Next / Previous Buffer |
 | `<A-h>` / `<A-l>` | Navigate windows left/right |
@@ -169,6 +175,8 @@ Switch with `:SetKeybindMode vscode`:
 | `<C-f>` | Find in File |
 | `<Tab>` / `<C-Tab>` | Next / Previous Buffer |
 | `<A-Up>` / `<A-Down>` | Move line up/down |
+| `<leader>pv` | View compiled PDF |
+| `<leader>fi` | Submit feedback (GitHub Issues) |
 
 > Press `<leader>h` to open the Command Palette which lists all available keybinds and Vim commands with live fuzzy search.
 
@@ -208,6 +216,23 @@ Individual toggle commands are also available:
 ... (23+ commands)
 ```
 
+### LaTeX
+
+Console IDE includes full LaTeX support via vimtex and texlab:
+
+| Key / Command | Action |
+|---|---|
+| `<leader>pv` | Open compiled PDF in system default viewer |
+| `:PdfView` | Same as above |
+| `:Feedback` | Report issues via GitHub Issues |
+| `:ToggleTexlab` | Toggle texlab LSP on/off on the fly |
+
+LaTeX features:
+- **Compilation** — vimtex auto-detects `latexmk` and compiles on save
+- **LSP** — texlab provides autocomplete, hover docs, goto-definition
+- **Syntax** — treesitter highlights `.tex` and `.bib` files
+- **PDF guard** — opening a `.pdf` shows a friendly message with `<leader>pv` prompt instead of raw binary
+
 ### Themes
 
 Three themes available:
@@ -228,12 +253,15 @@ Three themes available:
 | `:SetOCWidth` | `{30-90}` | Set OpenCode panel width |
 | `:SetKeybindMode` | `{vim\|vscode}` | Switch keybinding mode |
 | `:Toggle*` | — | Toggle any boolean setting (23+ commands) |
+| `:PdfView` | `[file]` | Open PDF in system default viewer |
+| `:Feedback` | — | Open GitHub Issues with pre-filled system info |
+| `:ToggleTexlab` | — | Enable/disable texlab LSP server |
 
 ## Project Structure
 
 ```
 ~/.config/nvim/          # or %LOCALAPPDATA%\nvim on Windows
-├── init.lua             # Single-file configuration (~1450 lines)
+├── init.lua             # Single-file configuration (~1720 lines)
 ├── lazy-lock.json       # Plugin version lockfile (auto-managed)
 ├── AGENTS.md            # Instructions for AI agents
 └── README.md            # This file
@@ -441,6 +469,7 @@ Console IDE uses the following plugins (managed by Lazy.nvim):
 | [Comment.nvim](https://github.com/numToStr/Comment.nvim) | Comment toggling |
 | [nvim-surround](https://github.com/kylechui/nvim-surround) | Surround editing |
 | [neoscroll](https://github.com/karb94/neoscroll.nvim) | Smooth scrolling |
+| [vimtex](https://github.com/lervag/vimtex) | LaTeX suite (compile, view, forward search) |
 
 ## C Development Setup Guide
 
