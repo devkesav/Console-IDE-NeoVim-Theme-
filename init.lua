@@ -1563,14 +1563,24 @@ vim.api.nvim_create_autocmd("BufReadCmd", {
             "  Press  q  or  <Esc>  to close this buffer.",
             "",
         }
+        local filepath = vim.fn.expand("%:p")
         vim.api.nvim_buf_set_lines(0, 0, -1, false, lines)
         vim.bo.bufhidden = "wipe"
         vim.bo.modifiable = false
         vim.bo.filetype = "pdf"
+        vim.bo.buftype = "nofile"
         local buf = vim.api.nvim_get_current_buf()
         local close = function() pcall(vim.api.nvim_buf_delete, buf, { force = true }) end
-        vim.keymap.set("n", "q", close, { buffer = buf, silent = true, nowait = true, desc = "Close PDF guard" })
-        vim.keymap.set("n", "<Esc>", close, { buffer = buf, silent = true, nowait = true, desc = "Close PDF guard" })
+        local noop = function() end
+        for _, lhs in ipairs({ "i", "a", "I", "A", "o", "O", "gi", "ga", "gI" }) do
+            vim.keymap.set("n", lhs, noop, { buffer = buf, silent = true, nowait = true, desc = "Disabled on PDF guard" })
+        end
+        vim.keymap.set("n", "q",      close, { buffer = buf, silent = true, nowait = true, desc = "Close PDF guard" })
+        vim.keymap.set("n", "<Esc>",  close, { buffer = buf, silent = true, nowait = true, desc = "Close PDF guard" })
+        vim.keymap.set("n", "<leader>pv", function()
+            vim.ui.open(filepath)
+            vim.api.nvim_echo({ { "Opening: " .. vim.fn.fnamemodify(filepath, ":t"), "None" } }, false, {})
+        end, { buffer = buf, silent = true, desc = "Open PDF in default viewer" })
     end,
 })
 
