@@ -1558,7 +1558,7 @@ vim.api.nvim_create_autocmd("BufReadCmd", {
             "",
             "  This file is a binary PDF and cannot be displayed in Neovim.",
             "",
-            "  Press  <leader>pv  to open it in your system's default PDF viewer.",
+            "  Press  Enter  to open in your system's default PDF viewer.",
             "  Or run  :PdfView",
             "  Press  q  or  <Esc>  to close this buffer.",
             "",
@@ -1570,18 +1570,18 @@ vim.api.nvim_create_autocmd("BufReadCmd", {
         vim.bo.filetype = "pdf"
         vim.bo.buftype = "nofile"
         local buf = vim.api.nvim_get_current_buf()
+        local open_pdf = function()
+            vim.ui.open(filepath)
+            vim.api.nvim_echo({ { "Opening: " .. vim.fn.fnamemodify(filepath, ":t"), "None" } }, false, {})
+        end
         local close = function() pcall(vim.api.nvim_buf_delete, buf, { force = true }) end
         local noop = function() end
         for _, lhs in ipairs({ "i", "a", "I", "A", "o", "O", "gi", "ga", "gI", "R", "gR", "Q" }) do
             vim.keymap.set("n", lhs, noop, { buffer = buf, silent = true, nowait = true, desc = "Disabled on PDF guard" })
         end
-        vim.keymap.set("n", "q",      close, { buffer = buf, silent = true, nowait = true, desc = "Close PDF guard" })
-        vim.keymap.set("n", "<Esc>",  close, { buffer = buf, silent = true, nowait = true, desc = "Close PDF guard" })
-        vim.keymap.set("n", ":q<CR>", close, { buffer = buf, silent = true, nowait = true, desc = "Close PDF guard" })
-        vim.keymap.set("n", "<leader>pv", function()
-            vim.ui.open(filepath)
-            vim.api.nvim_echo({ { "Opening: " .. vim.fn.fnamemodify(filepath, ":t"), "None" } }, false, {})
-        end, { buffer = buf, silent = true, desc = "Open PDF in default viewer" })
+        vim.keymap.set("n", "q",      close,    { buffer = buf, silent = true, nowait = true, desc = "Close PDF guard" })
+        vim.keymap.set("n", "<Esc>",  close,    { buffer = buf, silent = true, nowait = true, desc = "Close PDF guard" })
+        vim.keymap.set("n", "<CR>",   open_pdf, { buffer = buf, silent = true, nowait = true, desc = "Open PDF in default viewer" })
     end,
 })
 
