@@ -449,6 +449,8 @@ function ShowAbout()
     vim.bo[buf].buftype = "nofile"
     local width  = 72
     local height = #lines
+    vim.api.nvim_set_hl(0, "NormalFloat", { bg = "NONE" })
+    vim.api.nvim_set_hl(0, "FloatBorder", { bg = "NONE" })
     vim.api.nvim_open_win(buf, true, {
         relative  = "editor",
         width     = width,
@@ -456,8 +458,9 @@ function ShowAbout()
         row       = math.floor((vim.o.lines - height) / 2),
         col       = math.floor((vim.o.columns - width) / 2),
         style     = "minimal",
-        border    = "rounded",
-        title     = "  Vim D IDE — About  ",
+        border    = "single",
+        winblend  = 0,
+        title     = "  Console IDE — About  ",
         title_pos = "center",
     })
     vim.api.nvim_buf_set_keymap(buf, "n", "q",     ":close<CR>", { noremap = true, silent = true })
@@ -805,6 +808,8 @@ function OpenCommandPalette()
 
     local width  = 76
     local height = math.min(42, vim.o.lines - 4)
+    vim.api.nvim_set_hl(0, "NormalFloat", { bg = "NONE" })
+    vim.api.nvim_set_hl(0, "FloatBorder", { bg = "NONE" })
     local win    = vim.api.nvim_open_win(buf, true, {
         relative  = "editor",
         width     = width,
@@ -812,7 +817,8 @@ function OpenCommandPalette()
         row       = math.floor((vim.o.lines  - height) / 2),
         col       = math.floor((vim.o.columns - width)  / 2),
         style     = "minimal",
-        border    = "rounded",
+        border    = "single",
+        winblend  = 0,
         title     = "  Console IDE — Command Palette  ",
         title_pos = "center",
     })
@@ -1418,6 +1424,9 @@ vim.api.nvim_create_user_command("Customize", function()
     local row = math.floor(((ui and ui.height or 24) - height) / 2)
     local col = math.floor(((ui and ui.width or 80) - width) / 2)
 
+    vim.api.nvim_set_hl(0, "NormalFloat", { bg = "NONE" })
+    vim.api.nvim_set_hl(0, "FloatBorder", { bg = "NONE" })
+
     local win = vim.api.nvim_open_win(buf, true, {
         relative = "editor",
         width = width,
@@ -1425,10 +1434,9 @@ vim.api.nvim_create_user_command("Customize", function()
         row = row,
         col = col,
         style = "minimal",
-        border = "rounded",
+        border = "single",
+        winblend = 0,
     })
-
-    vim.api.nvim_win_set_option(win, "winhl", "NormalFloat:Normal")
 
     vim.keymap.set("n", "q", function()
         pcall(vim.api.nvim_win_close, win, true)
@@ -1807,6 +1815,8 @@ local function show_update_popup(behind)
     vim.bo[buf].modifiable = false
 
     local width, height = 60, #lines
+    vim.api.nvim_set_hl(0, "NormalFloat", { bg = "NONE" })
+    vim.api.nvim_set_hl(0, "FloatBorder", { bg = "NONE" })
     local win = vim.api.nvim_open_win(buf, true, {
         relative  = "editor",
         width     = width,
@@ -1814,7 +1824,8 @@ local function show_update_popup(behind)
         row       = math.floor((vim.o.lines - height) / 2),
         col       = math.floor((vim.o.columns - width) / 2),
         style     = "minimal",
-        border    = "rounded",
+        border    = "single",
+        winblend  = 0,
         title     = "  Update  ",
         title_pos = "center",
     })
@@ -1921,6 +1932,8 @@ local function show_nerd_font_popup()
     local row = math.floor(((ui and ui.height or 24) - height) / 2)
     local col = math.floor(((ui and ui.width or 80) - width) / 2)
 
+    vim.api.nvim_set_hl(0, "NormalFloat", { bg = "NONE" })
+    vim.api.nvim_set_hl(0, "FloatBorder", { bg = "NONE" })
     local win = vim.api.nvim_open_win(buf, true, {
         relative = "editor",
         width = width,
@@ -1928,9 +1941,9 @@ local function show_nerd_font_popup()
         row = row,
         col = col,
         style = "minimal",
-        border = "rounded",
+        border = "single",
+        winblend = 0,
     })
-    vim.api.nvim_win_set_option(win, "winhl", "NormalFloat:Normal")
 
     local close = function()
         pcall(vim.api.nvim_win_close, win, true)
