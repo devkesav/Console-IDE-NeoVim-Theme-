@@ -25,7 +25,7 @@ No mouse. No distractions. Just you and your codebase.
 - **Git Integration** — Gitsigns for inline git indicators; Lazygit via `<leader>g`
 - **Auto-save** — Automatic saving on TextChanged and InsertLeave
 - **Live Reload** — Auto-read detects external file changes (1s polling timer)
-- **AI Coding** — OpenCode integration via `<leader>ai` in a vertical split
+- **AI Coding** — OpenCode integration via `<leader>ai` in a vertical split with automatic project root detection and Neovim editor context awareness (cursor, selection, diagnostics)
 - **Settings Panel** (`:SettingsStatus`) — Tab-based interactive settings with toggle/setter commands
 - **First-launch Welcome** — Floating welcome popup on initial startup
 - **Session Persistence** — Lazy.nvim locks plugin versions in `lazy-lock.json`
@@ -105,6 +105,24 @@ On first launch, Lazy.nvim will automatically:
 
 This may take 1–3 minutes depending on your internet connection.
 
+### OpenCode Setup (required for AI features)
+
+For the AI coding features to work, install and configure [opencode](https://opencode.ai):
+
+```powershell
+npm install -g opencode-ai
+```
+
+Then create `~/.config/opencode/opencode.jsonc` with:
+
+```json
+{
+  "plugin": ["opencode-nvim-editor-context"]
+}
+```
+
+This enables the `editor_context` tool so OpenCode can see your current file, cursor position, selection, and LSP diagnostics when you ask about "this file".
+
 ### Updating
 
 Plugins update automatically via lazy.nvim. To manually update:
@@ -155,7 +173,7 @@ When you start Neovim for the first time:
 | `<leader>fb` | Switch Buffers |
 | `<leader>e` / `<C-e>` | Toggle File Tree |
 | `<leader>t` / `<C-t>` | Toggle Terminal |
-| `<leader>ai` | Open OpenCode AI |
+| `<leader>ai` | Open OpenCode AI (project root, editor-aware) |
 | `<leader>gs` | Git Status (fugitive) |
 | `<leader>gl` | Git Log |
 | `<leader>gb` | Git Blame |
@@ -498,6 +516,7 @@ Console IDE uses the following plugins (managed by Lazy.nvim):
 | [vimtex](https://github.com/lervag/vimtex) | LaTeX suite (compile, view, forward search) |
 | [vim-fugitive](https://github.com/tpope/vim-fugitive) | Git in native buffers (status, log, blame, diff) |
 | [octo.nvim](https://github.com/pwntester/octo.nvim) | GitHub PR, issue, and gist management |
+| [opencode-nvim-editor-context](https://github.com/talldan/opencode-nvim-editor-context) | Neovim editor context (cursor, selection, diagnostics) for OpenCode |
 
 ## C Development Setup Guide
 
