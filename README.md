@@ -442,6 +442,133 @@ Console IDE uses the following plugins (managed by Lazy.nvim):
 | [nvim-surround](https://github.com/kylechui/nvim-surround) | Surround editing |
 | [neoscroll](https://github.com/karb94/neoscroll.nvim) | Smooth scrolling |
 
+## C Development Setup Guide
+
+A quick reference for setting up C development with this config (Clang on Windows, GCC on Linux).
+
+### Overview
+
+| Tool | Purpose | Platform |
+|------|---------|----------|
+| **GCC** | Compile C code | Linux |
+| **Clang** | Compile C code | Windows |
+| **clangd** | LSP for Neovim (autocomplete, errors) | Both |
+| **VS Build Tools** | C standard headers (`stdio.h` etc.) | Windows only |
+
+### Windows Setup (Clang)
+
+#### 1. Install LLVM/Clang
+
+```powershell
+winget install LLVM.LLVM
+```
+
+#### 2. Add LLVM to PATH
+
+1. Search **"Environment Variables"** in Windows Start
+2. Click **"Edit the system environment variables"**
+3. Click **"Environment Variables"**
+4. Under **System variables**, find **Path** → click **Edit**
+5. Click **New** and add: `C:\Program Files\LLVM\bin`
+6. Click OK → OK → OK
+
+#### 3. Verify
+
+```powershell
+clang --version
+```
+
+#### 4. Install Visual Studio Build Tools (for headers)
+
+```powershell
+winget install Microsoft.VisualStudio.2022.BuildTools
+```
+
+Then:
+1. Open **Visual Studio Installer** from Start menu
+2. Click **Modify** on Build Tools 2022
+3. Check **"Desktop development with C++"**
+4. Click **Install** (~1.6 GB)
+
+#### 5. Configure clangd (fix `stdio.h not found`)
+
+Create `~\.config\clangd\config.yaml`:
+
+```powershell
+mkdir "$env:USERPROFILE\.config\clangd" -Force
+notepad "$env:USERPROFILE\.config\clangd\config.yaml"
+```
+
+Content:
+
+```yaml
+CompileFlags:
+  Add: ["-IC:/Program Files/LLVM/lib/clang/22/include"]
+```
+
+#### 6. Compile and Run
+
+```powershell
+clang hello.c -o hello.exe
+./hello.exe
+```
+
+### Linux Setup (GCC)
+
+#### 1. Install GCC
+
+```bash
+sudo apt install gcc
+```
+
+#### 2. Verify
+
+```bash
+gcc --version
+```
+
+#### 3. Compile and Run
+
+```bash
+gcc hello.c -o hello
+./hello
+```
+
+### Neovim LSP Setup (Both Platforms)
+
+clangd is already auto-installed via Mason on first launch (see [Features](#features)). To manually trigger:
+
+```
+:MasonInstall clangd
+```
+
+Restart Neovim — clangd will activate automatically on `.c` files.
+
+### Clang vs GCC — When to Use Which
+
+| Situation | Use |
+|-----------|-----|
+| Windows C development | **Clang** |
+| Linux C development | **GCC** |
+| C + Python app | **GCC** |
+| Embedded systems | **GCC** |
+| Better error messages | **Clang** |
+| Open source Linux projects | **GCC** |
+| macOS development | **Clang** |
+
+### Quick Reference
+
+| Command | Description |
+|---------|-------------|
+| `clang hello.c -o hello.exe` | Compile with Clang (Windows) |
+| `gcc hello.c -o hello` | Compile with GCC (Linux) |
+| `./hello.exe` | Run on Windows |
+| `./hello` | Run on Linux |
+| `clang --version` | Check Clang version |
+| `gcc --version` | Check GCC version |
+| `:MasonInstall clangd` | Install clangd LSP in Neovim |
+| `:LspRestart` | Restart LSP in Neovim |
+
 ## Connect
 
 - **GitHub** — [github.com/devkesav](https://github.com/devkesav)
