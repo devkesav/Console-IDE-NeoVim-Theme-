@@ -85,10 +85,18 @@ require("lazy").setup({
         end,
     },
 
+    -- Icons (replaces nvim-web-devicons)
+    {
+        "echasnovski/mini.icons",
+        lazy = false,
+        priority = 100,
+        config = function() require("mini.icons").setup() end,
+    },
+
     -- Dashboard
     {
         "goolord/alpha-nvim",
-        dependencies = { "nvim-tree/nvim-web-devicons" },
+        dependencies = { "echasnovski/mini.icons" },
         config = function()
             local alpha     = require("alpha")
             local dashboard = require("alpha.themes.dashboard")
@@ -156,7 +164,7 @@ end
     -- File tree
     {
         "nvim-tree/nvim-tree.lua",
-        dependencies = { "nvim-tree/nvim-web-devicons" },
+        dependencies = { "echasnovski/mini.icons" },
         config = function()
             require("nvim-tree").setup()
         end,
@@ -285,7 +293,7 @@ end
     -- Statusline
     {
         "nvim-lualine/lualine.nvim",
-        dependencies = { "nvim-tree/nvim-web-devicons" },
+        dependencies = { "echasnovski/mini.icons" },
         config = function()
             require("lualine").setup({ options = { theme = "auto" } })
         end,
@@ -301,7 +309,7 @@ end
     -- Buffer tabs
     {
         "akinsho/bufferline.nvim",
-        dependencies = { "nvim-tree/nvim-web-devicons" },
+        dependencies = { "echasnovski/mini.icons" },
         config = function() require("bufferline").setup() end,
     },
 
