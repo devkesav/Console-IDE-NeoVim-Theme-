@@ -31,6 +31,7 @@ Single-file Neovim configuration at `init.lua`. Entrypoint for all changes.
 | `<leader>ai` | Open OpenCode in vertical terminal split |
 | `<leader>pv` | Open compiled PDF in system default viewer |
 | `<leader>fi` | Submit feedback via GitHub Issues |
+| `<leader>uc` | Customize theme, font & icons |
 | `<Tab>` / `<S-Tab>` | BufferLine cycle next/prev |
 | `<C-x/c/v>` (n/v) | Clipboard cut/copy/paste via `"+` register |
 | `<A-h>` / `<A-l>` (n/t) | Navigate windows left/right |

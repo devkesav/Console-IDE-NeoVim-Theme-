@@ -33,6 +33,7 @@ No mouse. No distractions. Just you and your codebase.
 - **PDF Viewer** (`<leader>pv`) — Opens compiled PDF in system default viewer; guard prevents raw binary display
 - **Update Checker** — Checks GitHub for new commits on startup (800ms defer), shows release notes popup with `y` to install
 - **Feedback** (`<leader>fi`) — Opens GitHub Issues page with pre-filled system info for bug reports
+- **Customization Panel** (`<leader>uc`) — Interactive panel to change theme, font, and check/install Nerd Font for icons
 
 ## Prerequisites
 
@@ -134,6 +135,7 @@ When you start Neovim for the first time:
 | `r` | Recent Files |
 | `g` | Live Grep |
 | `s` | Settings Panel |
+| `c` | Customize (theme, font, icons) |
 | `h` | Command Palette |
 | `a` | About |
 | `q` | Quit |
@@ -154,6 +156,7 @@ When you start Neovim for the first time:
 | `<leader>s` / `<C-,>` | Open Settings |
 | `<leader>pv` | View compiled PDF |
 | `<leader>fi` | Submit feedback (GitHub Issues) |
+| `<leader>uc` | Customize theme, font & icons |
 | `<leader>h` | Command Palette |
 | `<Tab>` / `<S-Tab>` | Next / Previous Buffer |
 | `<A-h>` / `<A-l>` | Navigate windows left/right |
@@ -177,6 +180,7 @@ Switch with `:SetKeybindMode vscode`:
 | `<A-Up>` / `<A-Down>` | Move line up/down |
 | `<leader>pv` | View compiled PDF |
 | `<leader>fi` | Submit feedback (GitHub Issues) |
+| `<leader>uc` | Customize theme, font & icons |
 
 > Press `<leader>h` to open the Command Palette which lists all available keybinds and Vim commands with live fuzzy search.
 
@@ -224,7 +228,6 @@ Console IDE includes full LaTeX support via vimtex and texlab:
 |---|---|
 | `<leader>pv` | Open compiled PDF in system default viewer |
 | `:PdfView` | Same as above |
-| `:Feedback` | Report issues via GitHub Issues |
 | `:ToggleTexlab` | Toggle texlab LSP on/off on the fly |
 
 LaTeX features:
@@ -255,13 +258,16 @@ Three themes available:
 | `:Toggle*` | — | Toggle any boolean setting (23+ commands) |
 | `:PdfView` | `[file]` | Open PDF in system default viewer |
 | `:Feedback` | — | Open GitHub Issues with pre-filled system info |
+| `:Customize` | — | Open customization panel (theme, font, icons) |
+| `:SetFont` | `{name:h#}` | Set GUI font (e.g. `JetBrainsMono Nerd Font Mono:h11`) |
+| `:CheckNerdFont` | — | Check if Nerd Font is installed |
 | `:ToggleTexlab` | — | Enable/disable texlab LSP server |
 
 ## Project Structure
 
 ```
 ~/.config/nvim/          # or %LOCALAPPDATA%\nvim on Windows
-├── init.lua             # Single-file configuration (~1720 lines)
+├── init.lua             # Single-file configuration (~1870 lines)
 ├── lazy-lock.json       # Plugin version lockfile (auto-managed)
 ├── AGENTS.md            # Instructions for AI agents
 └── README.md            # This file

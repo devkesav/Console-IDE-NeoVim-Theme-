@@ -28,6 +28,7 @@ local DD = {
     -- "vim" = pure Vim binds,  "vscode" = VSCode-style binds
     keybind_mode  = "vim",
     highlight_yank= true,
+    guifont       = "JetBrainsMono Nerd Font Mono:h11",
 }
 
 -- ── Core editor options ───────────────────────────────────────────────────
@@ -38,6 +39,7 @@ vim.opt.shiftwidth     = 4
 vim.opt.expandtab      = true
 vim.opt.wrap           = false
 vim.opt.termguicolors  = true
+vim.opt.guifont        = DD.guifont
 vim.opt.clipboard      = "unnamedplus"
 
 -- ── Plugins ──────────────────────────────────────────────────────────────
@@ -134,6 +136,7 @@ end
                 dashboard.button("r", "  Recent Files",  ":Telescope oldfiles<CR>"),
                 dashboard.button("g", "  Live Grep",     ":Telescope live_grep<CR>"),
                 dashboard.button("s", "  Settings",      ":SettingsStatus<CR>"),
+                dashboard.button("c", "  Customize",     ":Customize<CR>"),
                 dashboard.button("h", "  Commands",      ":lua OpenCommandPalette()<CR>"),
                 dashboard.button("a", "  About",         ":lua ShowAbout()<CR>"),
                 dashboard.button("q", "  Quit",          ":qa<CR>"),
@@ -469,6 +472,7 @@ local keybinds_vim = {
     { "Editor",        "SPC pv",    "View compiled PDF",               2 },
     { "Editor",        "SPC fi",    "Submit feedback (GitHub Issues)", 2 },
     { "Editor",        "SPC s",     "Open Settings",                   1 },
+    { "Editor",        "SPC uc",    "Customize theme, font & icons",    2 },
     { "Editor",        "SPC h",     "Open Command Palette",            1 },
     { "Navigation",    "Tab",       "Next Buffer",                     1 },
     { "Navigation",    "S-Tab",     "Previous Buffer",                 1 },
@@ -505,6 +509,7 @@ local keybinds_vscode = {
     { "Editor",        "SPC ai",    "Open OpenCode AI",                1 },
     { "Editor",        "Ctrl ,",    "Open Settings",                   1 },
     { "Editor",        "SPC fi",    "Submit feedback (GitHub Issues)", 2 },
+    { "Editor",        "SPC uc",    "Customize theme, font & icons",    2 },
     { "Editor",        "SPC g",     "Open Lazygit",                    1 },
     { "Navigation",    "Ctrl Tab",  "Next Buffer",                     1 },
     { "Navigation",    "Ctrl S-Tab","Previous Buffer",                 1 },
@@ -1048,6 +1053,7 @@ local function apply_keybind_mode(m)
         set_extra("n", "<C-.>",     vim.lsp.buf.code_action,      "Code action")
         set_extra("n", "K",          vim.lsp.buf.hover,            "Hover docs")
         set_extra("n", "<leader>fi", ":Feedback<CR>",              "GitHub Issues feedback")
+        set_extra("n", "<leader>uc", ":Customize<CR>",            "Customize theme, font & icons")
         set_extra("n", "<S-A-f>",   function()
             pcall(vim.lsp.buf.format, { async = true })
         end, "Format file")
@@ -1332,6 +1338,146 @@ vim.api.nvim_create_user_command("SetKeybindMode", function(opts)
     vim.api.nvim_echo({ { "Keybind mode: " .. m, "None" } }, false, {})
 end, { nargs = 1, desc = "Set keybind mode: vim or vscode" })
 
+vim.api.nvim_create_user_command("SetFont", function(opts)
+    local font = opts.args
+    if font == "" then
+        vim.api.nvim_echo({ { "Current font: " .. vim.o.guifont, "None" } }, false, {})
+        return
+    end
+    DD.guifont = font
+    vim.opt.guifont = font
+    vim.api.nvim_echo({ { "Font set to: " .. font, "None" } }, false, {})
+    vim.cmd("redraw!")
+end, { nargs = "?", desc = "Set GUI font (e.g. :SetFont JetBrainsMono Nerd Font Mono:h11)" })
+
+local function check_nerd_font()
+    local installed = {}
+    local key = "HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Fonts"
+    local fonts = vim.fn.system('powershell -c "Get-ItemProperty -Path ' .. key .. ' 2>$null | ForEach-Object { $_.PSObject.Properties | Where-Object { $_.Name -match \\\"nerd\\\" } } | ForEach-Object { $_.Name }"')
+    for line in fonts:gmatch("[^\r\n]+") do
+        if line ~= "" then table.insert(installed, line) end
+    end
+    return installed
+end
+
+vim.api.nvim_create_user_command("CheckNerdFont", function()
+    local fonts = check_nerd_font()
+    if #fonts == 0 then
+        vim.api.nvim_echo({ { "No Nerd Font found. Run :Customize for install guide.", "WarningMsg" } }, false, {})
+    else
+        vim.api.nvim_echo({ { "Nerd Fonts installed: " .. table.concat(fonts, ", "), "None" } }, false, {})
+    end
+end, { desc = "Check if Nerd Fonts are installed" })
+
+vim.api.nvim_create_user_command("Customize", function()
+    local fonts = check_nerd_font()
+    local has_nerd = #fonts > 0
+    local lines = {
+        "",
+        "  ╔════════════════════════════════════════════════════════════╗",
+        "  ║                  Customize Console IDE                    ║",
+        "  ╚════════════════════════════════════════════════════════════╝",
+        "",
+        "  Theme        : " .. DD.theme,
+        "  Font (GUI)   : " .. vim.o.guifont,
+        "  Nerd Font    : " .. (has_nerd and "Installed" or "Not found"),
+        "",
+        "  ── Quick actions ──",
+        "",
+        "  [1]  Cycle Theme        (dark -> light -> mocha)",
+        "  [2]  Set Font           (enter font name)",
+        "  [3]  Open WT Settings   (Windows Terminal font config)",
+        "  [4]  Recheck Nerd Font",
+        "  [5]  Install Nerd Font  (winget)",
+        "",
+        "  Press number key to select, or q to close.",
+        "",
+    }
+    if not has_nerd then
+        table.insert(lines, 8, "  ⚠  Install JetBrainsMono Nerd Font for icons:")
+        table.insert(lines, 9, "       winget install DEVCOM.JetBrainsMonoNerdFont")
+        table.insert(lines, 10, "")
+    end
+
+    local buf = vim.api.nvim_create_buf(false, true)
+    vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+    vim.api.nvim_buf_set_option(buf, "modifiable", false)
+    vim.api.nvim_buf_set_option(buf, "bufhidden", "wipe")
+
+    local width = 62
+    local height = #lines + 2
+    local ui = vim.api.nvim_list_uis()[1]
+    local row = math.floor(((ui and ui.height or 24) - height) / 2)
+    local col = math.floor(((ui and ui.width or 80) - width) / 2)
+
+    local win = vim.api.nvim_open_win(buf, true, {
+        relative = "editor",
+        width = width,
+        height = height,
+        row = row,
+        col = col,
+        style = "minimal",
+        border = "rounded",
+    })
+
+    vim.api.nvim_win_set_option(win, "winhl", "NormalFloat:Normal")
+
+    vim.keymap.set("n", "q", function()
+        pcall(vim.api.nvim_win_close, win, true)
+    end, { buffer = buf, nowait = true, silent = true })
+
+    vim.keymap.set("n", "1", function()
+        local t = DD.theme
+        local themes = { "dark", "light", "mocha" }
+        local next_idx = 1
+        for i, v in ipairs(themes) do
+            if v == t then next_idx = i % #themes + 1; break end
+        end
+        DD.theme = themes[next_idx]
+        apply_theme(DD.theme)
+        pcall(vim.api.nvim_win_close, win, true)
+        vim.api.nvim_echo({ { "Theme: " .. DD.theme, "None" } }, false, {})
+        vim.cmd("Customize")
+    end, { buffer = buf, nowait = true, silent = true, desc = "Cycle theme" })
+
+    vim.keymap.set("n", "2", function()
+        pcall(vim.api.nvim_win_close, win, true)
+        local font = vim.fn.input("Font name (e.g. JetBrainsMono Nerd Font Mono:h11): ", vim.o.guifont)
+        if font ~= "" then
+            DD.guifont = font
+            vim.opt.guifont = font
+            vim.cmd("redraw!")
+            vim.api.nvim_echo({ { "Font: " .. font, "None" } }, false, {})
+        end
+        vim.cmd("Customize")
+    end, { buffer = buf, nowait = true, silent = true, desc = "Set font" })
+
+    vim.keymap.set("n", "3", function()
+        pcall(vim.api.nvim_win_close, win, true)
+        local wt = vim.fn.expand("$LOCALAPPDATA\\Packages\\Microsoft.WindowsTerminal_8wekyb3d8bbwe\\LocalState\\settings.json")
+        local wt_prev = vim.fn.expand("$LOCALAPPDATA\\Packages\\Microsoft.WindowsTerminalPreview_8wekyb3d8bbwe\\LocalState\\settings.json")
+        if vim.fn.filereadable(wt) == 1 then
+            vim.ui.open(wt)
+        elseif vim.fn.filereadable(wt_prev) == 1 then
+            vim.ui.open(wt_prev)
+        else
+            vim.api.nvim_echo({ { "Windows Terminal settings.json not found. Look in Terminal > Settings > Open JSON file.", "None" } }, false, {})
+        end
+        vim.api.nvim_echo({ { "Set font face to 'JetBrainsMono Nerd Font Mono' in Windows Terminal settings.", "None" } }, false, {})
+    end, { buffer = buf, nowait = true, silent = true, desc = "Open WT settings" })
+
+    vim.keymap.set("n", "4", function()
+        pcall(vim.api.nvim_win_close, win, true)
+        vim.cmd("Customize")
+    end, { buffer = buf, nowait = true, silent = true, desc = "Recheck Nerd Font" })
+
+    vim.keymap.set("n", "5", function()
+        pcall(vim.api.nvim_win_close, win, true)
+        vim.fn.system("winget install DEVCOM.JetBrainsMonoNerdFont --accept-source-agreements --accept-package-agreements")
+        vim.api.nvim_echo({ { "Installed JetBrainsMono Nerd Font. Configure it in your terminal settings.", "None" } }, false, {})
+    end, { buffer = buf, nowait = true, silent = true, desc = "Install Nerd Font" })
+end, { desc = "Open customization panel for theme, font, and icons" })
+
 -- ══════════════════════════════════════════════════════════════════════════
 --  PDF VIEWER  (opens in system-default PDF viewer)
 -- ══════════════════════════════════════════════════════════════════════════
@@ -1341,21 +1487,27 @@ vim.api.nvim_create_user_command("PdfView", function(opts)
     if arg ~= "" and vim.fn.filereadable(arg) == 1 then
         pdf_file = arg
     else
-        local base = vim.fn.expand("%:t:r")
-        for _, ext in ipairs({ ".pdf", ".PDF" }) do
-            local candidate = base .. ext
-            if vim.fn.filereadable(candidate) == 1 then
-                pdf_file = candidate
-                break
+        local ext = vim.fn.expand("%:e"):lower()
+        if ext == "pdf" then
+            pdf_file = vim.fn.expand("%:p")
+        else
+            local dir = vim.fn.expand("%:p:h")
+            local base = vim.fn.expand("%:t:r")
+            for _, e in ipairs({ ".pdf", ".PDF" }) do
+                local candidate = dir .. "/" .. base .. e
+                if vim.fn.filereadable(candidate) == 1 then
+                    pdf_file = candidate
+                    break
+                end
             end
-        end
-        if not pdf_file then
-            vim.api.nvim_echo({ { "PDF not found for: " .. vim.fn.expand("%"), "ErrorMsg" } }, false, {})
-            return
+            if not pdf_file then
+                vim.api.nvim_echo({ { "PDF not found for: " .. vim.fn.expand("%"), "ErrorMsg" } }, false, {})
+                return
+            end
         end
     end
     vim.ui.open(vim.fn.fnamemodify(pdf_file, ":p"))
-    vim.api.nvim_echo({ { "Opening: " .. pdf_file, "None" } }, false, {})
+    vim.api.nvim_echo({ { "Opening: " .. vim.fn.fnamemodify(pdf_file, ":t"), "None" } }, false, {})
 end, { nargs = "?", desc = "Open compiled PDF in system default viewer" })
 
 -- ══════════════════════════════════════════════════════════════════════════
@@ -1398,7 +1550,6 @@ end, { desc = "Open GitHub Issues to submit feedback" })
 vim.api.nvim_create_autocmd("BufReadCmd", {
     pattern = { "*.pdf", "*.PDF" },
     callback = function()
-        local path = vim.fn.expand("%:p")
         local lines = {
             "",
             "  ╔══════════════════════════════════════════════════════════════════╗",
@@ -1415,10 +1566,6 @@ vim.api.nvim_create_autocmd("BufReadCmd", {
         vim.bo.bufhidden = "wipe"
         vim.bo.modifiable = false
         vim.bo.filetype = "pdf"
-        vim.keymap.set("n", "<leader>pv", function()
-            vim.ui.open(path)
-            vim.api.nvim_echo({ { "Opening: " .. vim.fn.fnamemodify(path, ":t"), "None" } }, false, {})
-        end, { buffer = 0, silent = true, desc = "Open PDF in default viewer" })
     end,
 })
 
@@ -1439,6 +1586,7 @@ vim.keymap.set("n", "<C-,>",      ":SettingsStatus<CR>",   { silent = true, desc
 vim.keymap.set("n", "<leader>h",  OpenCommandPalette,  { silent = true, desc = "Command palette" })
 vim.keymap.set("n", "<leader>pv", ":PdfView<CR>",     { silent = true, desc = "View compiled PDF" })
 vim.keymap.set("n", "<leader>fi", ":Feedback<CR>",    { silent = true, desc = "Submit feedback via GitHub Issues" })
+vim.keymap.set("n", "<leader>uc", ":Customize<CR>",   { silent = true, desc = "Customize theme, font, and icons" })
 
 vim.keymap.set("n", "<leader>g", function()
     require("toggleterm.terminal").Terminal:new({
@@ -1717,3 +1865,22 @@ vim.defer_fn(function()
         show_update_popup(behind)
     end
 end, 800)
+
+-- Nerd Font check — warn once if no Nerd Font is installed
+vim.defer_fn(function()
+    if vim.g.console_ide_nerd_checked then return end
+    vim.g.console_ide_nerd_checked = true
+    local key = "HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Fonts"
+    local result = vim.fn.system('powershell -c "Get-ItemProperty -Path ' .. key .. ' 2>$null | ForEach-Object { $_.PSObject.Properties | Where-Object { $_.Name -match \\\"nerd\\\" } } | Select-Object -First 1"')
+    if result == nil or result:match("^%s*$") then
+        vim.defer_fn(function()
+            vim.api.nvim_echo({
+                { "Nerd Font not detected — icons may show as ", "None" },
+                { "�", "WarningMsg" },
+                { ". Run ", "None" },
+                { ":Customize", "Title" },
+                { " to install and configure.", "None" },
+            }, false, {})
+        end, 100)
+    end
+end, 2000)
