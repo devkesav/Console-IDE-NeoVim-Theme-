@@ -1560,12 +1560,17 @@ vim.api.nvim_create_autocmd("BufReadCmd", {
             "",
             "  Press  <leader>pv  to open it in your system's default PDF viewer.",
             "  Or run  :PdfView",
+            "  Press  q  or  <Esc>  to close this buffer.",
             "",
         }
         vim.api.nvim_buf_set_lines(0, 0, -1, false, lines)
         vim.bo.bufhidden = "wipe"
         vim.bo.modifiable = false
         vim.bo.filetype = "pdf"
+        local buf = vim.api.nvim_get_current_buf()
+        local close = function() pcall(vim.api.nvim_buf_delete, buf, { force = true }) end
+        vim.keymap.set("n", "q", close, { buffer = buf, silent = true, nowait = true, desc = "Close PDF guard" })
+        vim.keymap.set("n", "<Esc>", close, { buffer = buf, silent = true, nowait = true, desc = "Close PDF guard" })
     end,
 })
 
