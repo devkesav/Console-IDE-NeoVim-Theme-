@@ -8,8 +8,9 @@ local DD = {
     clangd        = true,
     lua_ls        = true,
     texlab        = true,
+    rust_analyzer = true,
     nvim_cmp      = true,
-    luasnip       = true,
+    luasnip       = true;
     stylua        = true,
     treesitter    = true,
     opencode      = true,
@@ -270,7 +271,7 @@ end
         dependencies = { "williamboman/mason.nvim", "neovim/nvim-lspconfig" },
         config = function()
             require("mason-lspconfig").setup({
-                ensure_installed    = { "pyright", "clangd", "lua_ls", "texlab" },
+                ensure_installed    = { "pyright", "clangd", "lua_ls", "texlab", "rust_analyzer" },
                 automatic_installation = true,
             })
         end,
@@ -1230,37 +1231,33 @@ end
 -- ══════════════════════════════════════════════════════════════
 --  CURSOR SYNC  (Follow Mode — cursor follows OpenCode edits)
 -- ══════════════════════════════════════════════════════════════
-local _follow_timer = nil
-local _follow_last_line = nil
-local follow_path = vim.fn.stdpath("data") .. "/opencode_cursor.txt"
+local _follow_augroup = nil
 
 local function apply_follow_mode(v)
-    if _follow_timer then
-        vim.fn.timer_stop(_follow_timer)
-        _follow_timer = nil
-        _follow_last_line = nil
+    if _follow_augroup then
+        vim.api.nvim_del_autocmd(_follow_augroup)
+        _follow_augroup = nil
     end
     if v then
-        _follow_timer = vim.fn.timer_start(300, function()
-            local f = io.open(follow_path, "r")
-            if not f then return end
-            local line = tonumber(f:read("*a"))
-            f:close()
-            if not line or line == _follow_last_line then return end
-            _follow_last_line = line
-            for _, win in ipairs(vim.api.nvim_list_wins()) do
-                local buf = vim.api.nvim_win_get_buf(win)
-                if vim.bo[buf].buftype == "" then
+        _follow_augroup = vim.api.nvim_create_autocmd("FileChangedShellPost", {
+            callback = function(args)
+                local buf = args.buf
+                if vim.bo[buf].buftype ~= "" then return end
+                local ok, start = pcall(function() return vim.api.nvim_buf_get_mark(buf, "[") end)
+                if ok and start[1] > 0 then
                     local total = vim.api.nvim_buf_line_count(buf)
-                    if line >= 1 and line <= total then
-                        pcall(vim.api.nvim_win_set_cursor, win, { line, 0 })
-                        pcall(vim.api.nvim_set_current_win, win)
-                        vim.cmd("normal! zz")
+                    local line = math.min(start[1], total)
+                    for _, win in ipairs(vim.api.nvim_list_wins()) do
+                        if vim.api.nvim_win_get_buf(win) == buf then
+                            pcall(vim.api.nvim_win_set_cursor, win, { line, 0 })
+                            pcall(vim.api.nvim_set_current_win, win)
+                            vim.cmd("normal! zz")
+                            break
+                        end
                     end
-                    break
                 end
-            end
-        end, { ["repeat"] = -1 })
+            end,
+        })
         vim.api.nvim_echo({ { "Cursor Sync ON — following OpenCode", "None" } }, false, {})
     else
         vim.api.nvim_echo({ { "Cursor Sync OFF", "None" } }, false, {})
@@ -1286,6 +1283,7 @@ local function apply_lsp(v)
     if DD.clangd  then table.insert(servers, "clangd")  end
     if DD.lua_ls  then table.insert(servers, "lua_ls")  end
     if DD.texlab  then table.insert(servers, "texlab")  end
+    if DD.rust_analyzer then table.insert(servers, "rust_analyzer") end
     if v and #servers > 0 then
         vim.lsp.enable(servers)
     elseif not v or #servers == 0 then
@@ -1339,6 +1337,7 @@ local toggle_cmds = {
     clangd     = { desc = "Clangd",              fn = function(v) if DD.lsp_enabled then apply_lsp(true) end end },
     lua_ls     = { desc = "Lua language server", fn = function(v) if DD.lsp_enabled then apply_lsp(true) end end },
     texlab     = { desc = "TexLab (LaTeX)",      fn = function(v) if DD.lsp_enabled then apply_lsp(true) end end },
+    rust_analyzer = { desc = "Rust analyzer",        fn = function(v) if DD.lsp_enabled then apply_lsp(true) end end },
     nvim_cmp   = { desc = "nvim-cmp",            fn = nil },
     luasnip    = { desc = "LuaSnip",             fn = nil },
     stylua     = { desc = "Stylua formatter",    fn = nil },
@@ -1373,6 +1372,7 @@ vim.api.nvim_create_user_command("SettingsStatus", function()
         { desc = "Clangd",               key = "clangd",        type = "toggle", cmd = ":ToggleClangd",         usage = "Toggle clangd LSP ON/OFF" },
         { desc = "Lua language server",  key = "lua_ls",        type = "toggle", cmd = ":ToggleLua_ls",         usage = "Toggle Lua language server ON/OFF" },
         { desc = "TexLab (LaTeX)",       key = "texlab",        type = "toggle", cmd = ":ToggleTexlab",          usage = "Toggle TexLab LaTeX LSP ON/OFF" },
+        { desc = "Rust analyzer",       key = "rust_analyzer", type = "toggle", cmd = ":ToggleRust_analyzer",  usage = "Toggle rust-analyzer LSP ON/OFF" },
         { desc = "nvim-cmp",             key = "nvim_cmp",      type = "toggle", cmd = ":ToggleNvim_cmp",       usage = "Toggle nvim-cmp completion ON/OFF" },
         { desc = "LuaSnip",              key = "luasnip",       type = "toggle", cmd = ":ToggleLuasnip",        usage = "Toggle LuaSnip snippets ON/OFF" },
         { desc = "Stylua formatter",     key = "stylua",        type = "toggle", cmd = ":ToggleStylua",         usage = "Toggle Stylua formatter ON/OFF" },
@@ -1770,6 +1770,47 @@ vim.api.nvim_create_autocmd("BufReadCmd", {
 -- ══════════════════════════════════════════════════════════════════════════
 --  CORE KEYBINDS  (always active regardless of mode)
 -- ══════════════════════════════════════════════════════════════════════════
+local function get_project_root()
+    local buf = vim.api.nvim_get_current_buf()
+    local buf_path = vim.api.nvim_buf_get_name(buf)
+    local buf_dir = vim.fn.fnamemodify(buf_path, ":p:h")
+    if buf_dir == "" then buf_dir = vim.fn.getcwd() end
+
+    local clients = vim.lsp.get_clients({ bufnr = buf })
+    if #clients > 0 then
+        local lsp_root = clients[1].config.root_dir
+        if lsp_root and lsp_root ~= "" then
+            return lsp_root
+        end
+    end
+
+    local function has_marker(dir, markers)
+        for _, marker in ipairs(markers) do
+            local path = dir .. "\\" .. marker
+            if vim.fn.isdirectory(path) == 1 or vim.fn.filereadable(path) == 1 then
+                return true
+            end
+        end
+        return false
+    end
+
+    local markers = { ".git", "package.json", "Cargo.toml", "pyproject.toml",
+                      "go.mod", "Makefile", "CMakeLists.txt", "composer.json",
+                      ".project", ".solution", "SLN" }
+
+    local search_dir = buf_dir
+    local last = ""
+    while search_dir ~= last do
+        if has_marker(search_dir, markers) then
+            return search_dir
+        end
+        last = search_dir
+        search_dir = vim.fn.fnamemodify(search_dir, ":h")
+    end
+
+    return buf_dir
+end
+
 vim.keymap.set("n", "<leader>e",  ":NvimTreeToggle<CR>",            { silent = true })
 vim.keymap.set("n", "<leader>t", function()
     require("toggleterm.terminal").Terminal:new({ direction = "horizontal", size = 10, dir = get_project_root() }):toggle()
@@ -1825,50 +1866,6 @@ vim.keymap.set("n", "<A-h>", "<C-w>h",            { silent = true })
 vim.keymap.set("n", "<A-l>", "<C-w>l",            { silent = true })
 vim.keymap.set("t", "<A-h>", "<C-\\><C-n><C-w>h", { silent = true })
 vim.keymap.set("t", "<A-l>", "<C-\\><C-n><C-w>l", { silent = true })
-
--- Detect project root directory
-local function get_project_root()
-    local buf = vim.api.nvim_get_current_buf()
-    local buf_path = vim.api.nvim_buf_get_name(buf)
-    local buf_dir = vim.fn.fnamemodify(buf_path, ":p:h")
-    if buf_dir == "" then buf_dir = vim.fn.getcwd() end
-
-    -- 1. LSP workspace root
-    local clients = vim.lsp.get_clients({ bufnr = buf })
-    if #clients > 0 then
-        local lsp_root = clients[1].config.root_dir
-        if lsp_root and lsp_root ~= "" then
-            return lsp_root
-        end
-    end
-
-    -- 2. Walk up from buffer dir looking for .git
-    local function has_marker(dir, markers)
-        for _, marker in ipairs(markers) do
-            local path = dir .. "\\" .. marker
-            if vim.fn.isdirectory(path) == 1 or vim.fn.filereadable(path) == 1 then
-                return true
-            end
-        end
-        return false
-    end
-
-    local markers = { ".git", "package.json", "Cargo.toml", "pyproject.toml",
-                      "go.mod", "Makefile", "CMakeLists.txt", "composer.json",
-                      ".project", ".solution", "SLN" }
-
-    local search_dir = buf_dir
-    local last = ""
-    while search_dir ~= last do
-        if has_marker(search_dir, markers) then
-            return search_dir
-        end
-        last = search_dir
-        search_dir = vim.fn.fnamemodify(search_dir, ":h")
-    end
-
-    return buf_dir
-end
 
 -- OpenCode AI panel with project root
 vim.keymap.set("n", "<leader>ai", function()
